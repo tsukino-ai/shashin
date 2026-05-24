@@ -1,0 +1,6 @@
+name = "galary"
+compatibility_date = "2025-05-24"
+
+[[r2_buckets]]
+binding = "GALARY_BUCKET"
+bucket_name = "galary-photos"
