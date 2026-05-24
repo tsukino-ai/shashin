@@ -11,30 +11,37 @@ export interface Props {
 
 const { title, heading, prefix } = Astro.props;
 
-const bucket = env.GALARY_BUCKET;
-
 let photos: { src: string; thumb: string; w: number; h: number }[] = [];
 let error: string | null = null;
+let debug: string = '';
 
 try {
-  const listed = await bucket.list({ prefix });
-  photos = listed.objects.map((obj) => {
-    const publicUrl = `https://cdn.tsukino.dev/${obj.key}`;
-    return {
-      src: publicUrl,
-      thumb: publicUrl,
-      w: 2000,
-      h: 3000,
-    };
-  });
-} catch (e) {
-  console.error('R2 list error:', e);
-  error = '无法加载照片，请稍后重试';
+  debug += `env type: ${typeof env}\n`;
+  debug += `env keys: ${Object.keys(env).join(', ')}\n`;
+  const bucket = env.GALARY_BUCKET;
+  debug += `bucket type: ${typeof bucket}\n`;
+  if (bucket) {
+    const listed = await bucket.list({ prefix });
+    photos = listed.objects.map((obj) => {
+      const publicUrl = `https://cdn.tsukino.dev/${obj.key}`;
+      return {
+        src: publicUrl,
+        thumb: publicUrl,
+        w: 2000,
+        h: 3000,
+      };
+    });
+  } else {
+    debug += 'ERROR: GALARY_BUCKET is undefined\n';
+  }
+} catch (e: any) {
+  debug += `EXCEPTION: ${e?.message || String(e)}\n`;
 }
 ---
 
 <Layout title={title}>
   <h1 class="text-3xl font-light mb-8">{heading}</h1>
+  {debug && <pre class="bg-neutral-800 p-4 rounded text-sm text-green-400 whitespace-pre-wrap mb-4">{debug}</pre>}
   {error && <p class="text-red-400 text-center py-8">{error}</p>}
   <PhotoGrid photos={photos} />
 </Layout>
