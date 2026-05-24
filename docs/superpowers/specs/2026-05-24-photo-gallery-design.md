@@ -11,10 +11,12 @@
 一个纯前端、无服务器的个人写真照片展示系统，部署在 Cloudflare Pages 上，照片存储在 Cloudflare R2（免费 10GB），通过浏览器端 Canvas 打水印后上传，使用 Astro 生成静态展示页面，PhotoSwipe 实现大图灯箱浏览。
 
 ### 核心需求
-- 上传自己的写真照片，自动打水印
+- 上传自己的写真照片，自动打水印（水印样式和内容可配置）
 - 照片墙展示，支持点击放大浏览
+- 部分内容为隐藏内容，需密码或 OAuth 登录后才能查看
 - 无服务器部署（Cloudflare Pages）
 - 存储在 Cloudflare R2（免费额度）
+- 照片规模：约几百张，单张约 20MB（原图）
 
 ---
 
@@ -30,6 +32,7 @@
 | 上传接口 | Cloudflare Worker | — | 验证文件类型/大小后写入 R2，不暴露密钥 |
 | 缩略图优化 | Cloudflare Images | URL 变换 | 动态裁剪/格式转换，不消耗 R2 流量 |
 | 部署 | Cloudflare Pages | — | 绑定 git 自动构建部署 |
+| 认证 | Cloudflare Access / Workers JWT | — | 隐藏内容访问控制 |
 | 样式 | Tailwind CSS | v4.x | 原子化 CSS，快速构建响应式布局 |
 
 ---
@@ -97,17 +100,23 @@
 **布局**: 单页应用，拖拽上传区域
 **结构**:
 - 拖拽区域: 拖入图片或点击选择
-- 水印配置面板:
+- 水印配置面板（所有参数可实时调整并保存到 localStorage）:
   - 文字内容（默认"© YourName"）
-  - 字体大小、颜色、透明度
-  - 旋转角度、平铺间距
-  - 实时预览
+  - 字体大小、颜色、透明度（0-100%）
+  - 旋转角度（0-360°）
+  - 平铺模式：全图平铺 / 右下角单点 / 居中
+  - 平铺间距 X/Y（px）
+  - 实时预览（小图预览效果）
+  - 保存配置 / 恢复默认
+  - 支持上传图片水印（Logo 等）
 - 图片处理流程:
   1. 读取原图 → FileReader
-  2. 用 watermark-js-plus 在 Canvas 上绘制水印
-  3. 用 browser-image-compression 压缩（可选）
-  4. 生成缩略图（可选，用 Canvas 缩放）
-  5. 上传原图（+缩略图）到 Worker
+  2. 检查图片尺寸（如果 >10MB 提示建议压缩）
+  3. 用 watermark-js-plus 在 Canvas 上绘制水印（使用用户配置的样式）
+  4. 用 browser-image-compression 压缩（质量 0.9，保持视觉无损）
+  5. 生成缩略图（用 Canvas 缩放至 max 1200px 长边，作为展示用原图）
+  6. 上传处理后的图片到 Worker
+  > 注：单张 20MB 原图浏览器 Canvas 处理可能卡顿，建议上传时压缩至 5-8MB
 - 上传进度条 + 结果反馈
 
 ---
@@ -176,7 +185,54 @@
 
 ---
 
-## 6. 水印方案
+## 6. 认证与访问控制
+
+### 6.1 需求
+- 公开内容：所有人可见（如精选展示）
+- 隐藏内容：需认证后才能查看完整写真集
+- 支持密码登录 或 OAuth（Google/GitHub）
+
+### 6.2 方案对比
+
+| 方案 | 实现方式 | 安全性 | 复杂度 | 成本 |
+|------|---------|--------|--------|------|
+| **A. Cloudflare Access** | Zero Trust 策略，保护整个站点或子路径 | ⭐⭐⭐⭐⭐ | 中 | 免费（最多 50 用户） |
+| **B. Workers JWT 验证** | Worker 签发/验证 JWT Cookie，前端带 Token 请求 | ⭐⭐⭐⭐ | 高 | 免费 |
+| **C. 前端密码哈希** | 纯前端 SHA256 比对密码，通过后显示内容 | ⭐⭐ | 低 | 免费 |
+
+### 6.3 推荐方案：Cloudflare Access（方案 A）
+
+原因：
+- 官方原生支持，无需写代码
+- 支持 Google/GitHub/One-time PIN 等多种 OAuth
+- 支持保护特定路径（如 `/private/*`）
+- 免费版支持最多 50 个用户
+
+**配置方式**：
+1. Cloudflare 控制台 → Zero Trust → Access → Applications
+2. 添加 Self-hosted 应用
+3. 配置策略：允许邮件域名 或 特定邮箱
+4. 选择保护路径：`your-domain.com/private/*`
+
+**Astro 页面结构**：
+```
+src/pages/
+├── index.astro          # 公开首页（精选/预览）
+├── private/
+│   └── index.astro      # 完整写真集（受 Access 保护）
+└── upload.astro         # 上传页面（受 Access 保护，仅自己可访问）
+```
+
+### 6.4 备选方案：前端密码保护（方案 C）
+
+如果只需要简单密码，不想配置 Access：
+- 上传页：用环境变量或硬编码 SHA256 哈希比对
+- 展示页：同样方式保护 `/private` 路径
+- ⚠️ 此方案只能防君子，懂技术的用户可通过查看源码绕过
+
+---
+
+## 7. 水印方案
 
 ### 6.1 实现方式
 
@@ -212,7 +268,47 @@
 
 ---
 
-## 7. R2 存储设计
+## 8. 大文件处理策略（20MB 原图）
+
+### 7.1 问题分析
+
+单张 20MB 写真照片的特点：
+- 尺寸大（通常为 6000×4000px 左右，未压缩 RAW 转 JPEG）
+- 浏览器 Canvas 处理 20MB 图片时，内存峰值可能达到 100-200MB
+- 上传时间长（国内网络上传 20MB 约 10-30 秒）
+- 展示时加载 20MB 原图极慢，用户体验差
+
+### 7.2 处理策略
+
+**策略一：上传时压缩（推荐）**
+- 浏览器端用 `browser-image-compression` 压缩至 5-8MB
+- 质量参数 0.9，长边限制 3000px
+- 压缩后视觉几乎无损，上传速度提升 3-4 倍
+- Canvas 打水印在压缩后的图片上进行，内存占用大幅降低
+
+**策略二：仅上传压缩版，不保留 20MB 原图**
+- 如果 20MB 是相机直出且不需要保留原图
+- 直接压缩后上传，节省 R2 空间
+
+**策略三：分级存储（如果需要保留原图）**
+- 20MB 原图 → 本地 NAS/硬盘备份（不存 R2）
+- 压缩版（5-8MB）→ 上传 R2 用于展示
+- 这样 300 张照片约占用 300 × 6MB = 1.8GB，远低于 R2 免费 10GB
+
+### 7.3 照片规模估算
+
+| 项目 | 数量 | 单张大小 | 总量 |
+|------|------|----------|------|
+| 原图（本地备份） | 300 张 | 20MB | 6GB（本地） |
+| 压缩版（R2 展示） | 300 张 | 6MB | 1.8GB（R2） |
+| 缩略图（Images 生成） | 300 张 | 0.1MB | 0（不额外存储） |
+| **R2 总占用** | — | — | **≈2GB** |
+
+**结论**：300 张 × 6MB = 1.8GB，在 R2 免费 10GB 额度内，空间充足。
+
+---
+
+## 9. R2 存储设计
 
 ### 7.1 Bucket 结构
 
@@ -239,7 +335,7 @@ galary-photos (Bucket)
 
 ---
 
-## 8. Worker 上传接口设计
+## 10. Worker 上传接口设计
 
 ### 8.1 接口定义
 
@@ -321,7 +417,7 @@ const corsHeaders = {
 
 ---
 
-## 9. 缩略图策略
+## 11. 缩略图策略
 
 ### 9.1 方案选择
 
@@ -351,7 +447,7 @@ https://your-domain.com/cdn-cgi/image/fit=scale-down,width=800,quality=85/https:
 
 ---
 
-## 10. 安全考虑
+## 12. 安全考虑
 
 | 风险 | 缓解措施 |
 |------|----------|
@@ -364,7 +460,7 @@ https://your-domain.com/cdn-cgi/image/fit=scale-down,width=800,quality=85/https:
 
 ---
 
-## 11. 部署流程
+## 13. 部署流程
 
 ### 11.1 开发环境
 
@@ -403,7 +499,7 @@ npx wrangler dev worker/index.js
 
 ---
 
-## 12. 文件结构
+## 14. 文件结构
 
 ```
 galary/
@@ -417,12 +513,16 @@ galary/
 │   ├── components/
 │   │   ├── PhotoGrid.astro          # 照片网格组件
 │   │   ├── PhotoSwipeInit.astro     # PhotoSwipe 初始化脚本
-│   │   └── WatermarkUploader.jsx    # 上传页面组件（React/Vue）
+│   │   ├── WatermarkUploader.jsx    # 上传页面组件（React/Vue）
+│   │   ├── WatermarkConfig.jsx      # 水印配置面板
+│   │   └── ImageCompressor.js       # 浏览器压缩工具
 │   ├── layouts/
 │   │   └── Layout.astro             # 基础布局
 │   ├── pages/
-│   │   ├── index.astro              # 展示墙首页
-│   │   └── upload.astro             # 上传页面
+│   │   ├── index.astro              # 公开展示墙（精选预览）
+│   │   ├── private/
+│   │   │   └── index.astro          # 完整写真集（受 Access 保护）
+│   │   └── upload.astro             # 上传页面（受 Access 保护）
 │   └── styles/
 │       └── global.css
 ├── worker/
@@ -435,7 +535,7 @@ galary/
 
 ---
 
-## 13. 后续扩展（可选）
+## 15. 后续扩展（可选）
 
 - [ ] 图片分类/标签
 - [ ] 按时间线分组
