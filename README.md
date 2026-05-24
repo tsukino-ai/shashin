@@ -1,43 +1,33 @@
-# Astro Starter Kit: Minimal
+# Galary — 个人写真照片墙
 
-```sh
-npm create astro@latest -- --template minimal
+## 部署步骤
+
+1. 创建 R2 Bucket
+   ```bash
+   wrangler r2 bucket create galary-photos
+   ```
+
+2. 设置 Bucket 为 Public
+   - Cloudflare 控制台 → R2 → galary-photos → Settings → Allow Public Access
+
+3. 部署 Pages
+   ```bash
+   npm run build
+   wrangler pages deploy dist
+   ```
+
+4. 配置 Cloudflare Access
+   - Zero Trust → Access → Applications → Add
+   - 保护路径: `your-domain.com/upload` 和 `your-domain.com/private`
+   - 添加允许的邮箱
+
+## 本地开发
+
+```bash
+npm run dev
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
-
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+Worker 本地测试:
+```bash
+wrangler pages dev
 ```
-
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
-
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
-
-Any static assets, like images, can be placed in the `public/` directory.
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
