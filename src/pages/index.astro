@@ -1,5 +1,51 @@
 ---
-import GalleryPage from '../components/GalleryPage.astro';
+import Layout from '../layouts/Layout.astro';
+
+let debug = '';
+let photos: any[] = [];
+
+try {
+  const runtime = (Astro as any).locals?.runtime;
+  debug += `runtime exists: ${!!runtime}\n`;
+  if (runtime) {
+    debug += `env exists: ${!!runtime.env}\n`;
+    if (runtime.env) {
+      debug += `GALARY_BUCKET exists: ${!!runtime.env.GALARY_BUCKET}\n`;
+      if (runtime.env.GALARY_BUCKET) {
+        const listed = await runtime.env.GALARY_BUCKET.list({ prefix: 'public/' });
+        debug += `objects count: ${listed.objects.length}\n`;
+        photos = listed.objects.map((obj: any) => ({
+          src: `https://cdn.tsukino.dev/${obj.key}`,
+          thumb: `https://cdn.tsukino.dev/${obj.key}`,
+          w: 2000,
+          h: 3000,
+        }));
+      } else {
+        debug += 'ERROR: GALARY_BUCKET is undefined\n';
+      }
+    } else {
+      debug += 'ERROR: env is undefined\n';
+    }
+  } else {
+    debug += 'ERROR: runtime is undefined\n';
+  }
+} catch (e: any) {
+  debug += `EXCEPTION: ${e?.message || String(e)}\n`;
+}
 ---
 
-<GalleryPage title="精选" heading="精选写真" prefix="public/" />
+<Layout title="精选">
+  <h1 class="text-3xl font-light mb-8">精选写真</h1>
+  <pre class="bg-neutral-800 p-4 rounded text-sm text-green-400 whitespace-pre-wrap">{debug}</pre>
+  {photos.length === 0 ? (
+    <p class="text-neutral-500 text-center py-20">暂无照片</p>
+  ) : (
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      {photos.map((photo, i) => (
+        <div class="aspect-[3/4] overflow-hidden rounded-lg bg-neutral-800">
+          <img src={photo.src} alt={`照片 ${i + 1}`} loading="lazy" width={photo.w} height={photo.h} class="w-full h-full object-cover" />
+        </div>
+      ))}
+    </div>
+  )}
+</Layout>
