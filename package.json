@@ -18,9 +18,11 @@
     "tus-js-client": "^4.3.1"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260524.1",
     "@tailwindcss/postcss": "^4.1.6",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.3",
-    "tailwindcss": "^4.1.6"
+    "tailwindcss": "^4.1.6",
+    "typescript": "^6.0.3"
   }
 }
