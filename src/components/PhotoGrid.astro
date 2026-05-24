@@ -1,0 +1,25 @@
+---
+interface Photo {
+  src: string;
+  thumb: string;
+  w: number;
+  h: number;
+  alt?: string;
+}
+interface Props {
+  photos: Photo[];
+}
+const { photos } = Astro.props;
+---
+
+{photos.length === 0 ? (
+  <p class="text-neutral-500 text-center py-20">暂无照片</p>
+) : (
+  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    {photos.map((photo, i) => (
+      <div class="aspect-[3/4] overflow-hidden rounded-lg bg-neutral-800">
+        <img src={photo.src} alt={photo.alt || `照片 ${i + 1}`} loading="lazy" width={photo.w} height={photo.h} class="w-full h-full object-cover" />
+      </div>
+    ))}
+  </div>
+)}
