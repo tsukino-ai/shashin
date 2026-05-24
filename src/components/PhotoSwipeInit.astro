@@ -1,0 +1,28 @@
+<script>
+  import PhotoSwipeLightbox from 'photoswipe/lightbox';
+  import 'photoswipe/style.css';
+
+  function initPhotoSwipe() {
+    const gallery = document.getElementById('gallery');
+    if (!gallery) return;
+
+    const lightbox = new PhotoSwipeLightbox({
+      gallery: '#gallery',
+      children: 'a',
+      pswpModule: () => import('photoswipe'),
+    });
+
+    lightbox.init();
+    return lightbox;
+  }
+
+  let lightbox = initPhotoSwipe();
+
+  // Re-init on astro:page-load if View Transitions are ever enabled
+  document.addEventListener('astro:page-load', () => {
+    if (lightbox) {
+      lightbox.destroy();
+    }
+    lightbox = initPhotoSwipe();
+  });
+</script>
