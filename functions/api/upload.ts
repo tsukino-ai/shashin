@@ -5,7 +5,7 @@ interface Env {
 }
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://galary.tsukino.dev',
+  'Access-Control-Allow-Origin': 'https://shashin.tsukino.dev',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Upload-Metadata',
 };

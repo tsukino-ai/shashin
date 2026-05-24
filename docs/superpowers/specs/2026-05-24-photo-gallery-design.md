@@ -1,7 +1,7 @@
 # 写真照片展示墙设计方案
 
 **日期**: 2026-05-24  
-**项目**: galary — 个人写真照片展示墙  
+**项目**: shashin — 个人写真照片展示墙  
 **部署目标**: Cloudflare Pages + R2  
 
 ---
@@ -64,7 +64,7 @@
                               ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                        Cloudflare R2                                 │
-│  Bucket: galary-photos                                               │
+│  Bucket: shashin-photos                                               │
 │  ├── photos/                                                         │
 │  │   ├── 20250524-xxx-1.jpg  (带水印原图)                             │
 │  │   ├── 20250524-xxx-2.jpg                                         │
@@ -322,7 +322,7 @@ src/pages/
 ### 7.1 Bucket 结构
 
 ```
-galary-photos (Bucket)
+shashin-photos (Bucket)
 ├── photos/                          # 带水印原图
 │   ├── 20250524-xxx-1.jpg
 │   └── ...
@@ -475,8 +475,8 @@ https://your-domain.com/cdn-cgi/image/fit=scale-down,width=800,quality=85/https:
 
 ```bash
 # 初始化项目
-npm create astro@latest galary -- --template minimal
-cd galary
+npm create astro@latest shashin -- --template minimal
+cd shashin
 npm install photoswipe watermark-js-plus browser-image-compression
 npm install -D @types/photoswipe wrangler
 
@@ -489,7 +489,7 @@ npx wrangler dev worker/index.js
 
 ### 11.2 生产部署
 
-1. **Cloudflare R2**: 创建 Bucket `galary-photos`，设为 Public
+1. **Cloudflare R2**: 创建 Bucket `shashin-photos`，设为 Public
 2. **Cloudflare Worker**: 部署上传 Worker，绑定 R2 Bucket
 3. **Cloudflare Pages**: 连接 GitHub 仓库，配置构建命令 `npm run build`，输出目录 `dist`
 4. **自定义域名**（可选）: 绑定自己的域名，开启 Images Transformations
@@ -511,7 +511,7 @@ npx wrangler dev worker/index.js
 ## 14. 文件结构
 
 ```
-galary/
+shashin/
 ├── docs/
 │   └── superpowers/
 │       └── specs/

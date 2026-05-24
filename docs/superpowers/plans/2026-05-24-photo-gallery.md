@@ -13,7 +13,7 @@
 ## File Structure
 
 ```
-galary/
+shashin/
 ├── public/
 │   └── image-worker.js              # Browser Web Worker: decode → watermark → export JPEG
 ├── src/
@@ -54,7 +54,7 @@ galary/
 - [ ] **Step 1: Create Astro project with Cloudflare adapter**
 
 ```bash
-cd /Users/Apple/projects/tsukino/galary
+cd /Users/Apple/projects/tsukino/shashin
 npm create astro@latest . -- --template minimal --install --git=false
 npm install @astrojs/cloudflare@latest
 npm install photoswipe
@@ -82,12 +82,12 @@ export default defineConfig({
 Create `wrangler.toml`:
 
 ```toml
-name = "galary"
+name = "shashin"
 compatibility_date = "2025-05-24"
 
 [[r2_buckets]]
 binding = "GALARY_BUCKET"
-bucket_name = "galary-photos"
+bucket_name = "shashin-photos"
 ```
 
 - [ ] **Step 4: Add Cloudflare runtime type declarations**
@@ -973,13 +973,13 @@ git commit -m "feat: add PhotoGrid and PhotoSwipe lightbox integration"
 Modify `wrangler.toml`:
 
 ```toml
-name = "galary"
+name = "shashin"
 compatibility_date = "2025-05-24"
 
 # R2 bucket binding
 [[r2_buckets]]
 binding = "GALARY_BUCKET"
-bucket_name = "galary-photos"
+bucket_name = "shashin-photos"
 
 # Pages Functions config
 [site]
@@ -1027,11 +1027,11 @@ Create `README.md`:
 
 1. 创建 R2 Bucket
    ```bash
-   wrangler r2 bucket create galary-photos
+   wrangler r2 bucket create shashin-photos
    ```
 
 2. 设置 Bucket 为 Public
-   - Cloudflare 控制台 → R2 → galary-photos → Settings → Allow Public Access
+   - Cloudflare 控制台 → R2 → shashin-photos → Settings → Allow Public Access
 
 3. 部署 Pages
    ```bash

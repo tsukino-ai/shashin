@@ -1,9 +1,9 @@
-name = "galary"
+name = "shashin"
 compatibility_date = "2025-05-24"
 
 [[r2_buckets]]
 binding = "GALARY_BUCKET"
-bucket_name = "galary-photos"
+bucket_name = "shashin-photos"
 
 # Pages Functions config
 [site]

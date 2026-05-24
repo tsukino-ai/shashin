@@ -1,14 +1,14 @@
-# Galary — 个人写真照片墙
+# Shashin — 个人写真照片墙
 
 ## 部署步骤
 
 1. 创建 R2 Bucket
    ```bash
-   wrangler r2 bucket create galary-photos
+   wrangler r2 bucket create shashin-photos
    ```
 
 2. 设置 Bucket 为 Public
-   - Cloudflare 控制台 → R2 → galary-photos → Settings → Allow Public Access
+   - Cloudflare 控制台 → R2 → shashin-photos → Settings → Allow Public Access
 
 3. 部署 Pages
    ```bash
