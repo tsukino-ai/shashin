@@ -19,7 +19,7 @@ let error: string | null = null;
 try {
   const listed = await bucket.list({ prefix });
   photos = listed.objects.map((obj) => {
-    const publicUrl = `https://pub-xxx.r2.dev/${obj.key}`;
+    const publicUrl = `https://cdn.tsukino.dev/${obj.key}`;
     return {
       src: publicUrl,
       thumb: publicUrl,

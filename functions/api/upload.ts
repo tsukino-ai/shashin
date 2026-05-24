@@ -5,7 +5,7 @@ interface Env {
 }
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://galary.tsukino.dev',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Upload-Metadata',
 };
@@ -65,7 +65,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     });
 
     // Construct public URL (R2 public bucket)
-    const publicUrl = `https://pub-xxx.r2.dev/${key}`;
+    const publicUrl = `https://cdn.tsukino.dev/${key}`;
 
     return jsonResponse({ success: true, url: publicUrl, key, size: file.size }, 200);
   } catch (err: unknown) {
