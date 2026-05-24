@@ -73,8 +73,9 @@ self.onmessage = async (e) => {
       quality: 0.95,
     });
 
-    // 6. Transfer blob back to main thread (zero-copy)
-    self.postMessage({ success: true, blob, width, height }, [blob]);
+    // 6. Transfer ArrayBuffer back to main thread (zero-copy)
+    const arrayBuffer = await blob.arrayBuffer();
+    self.postMessage({ success: true, arrayBuffer, width, height }, [arrayBuffer]);
   } catch (err) {
     self.postMessage({ success: false, error: err?.message || String(err) });
   } finally {

@@ -53,10 +53,10 @@ export default function UploadManager() {
     // Create Web Worker
     const worker = new Worker('/image-worker.js');
 
-    const blob = await new Promise((resolve, reject) => {
+    const result = await new Promise((resolve, reject) => {
       worker.onmessage = (e) => {
         if (e.data.success) {
-          resolve(e.data.blob);
+          resolve(e.data);
         } else {
           reject(new Error(e.data.error));
         }
@@ -64,6 +64,8 @@ export default function UploadManager() {
       worker.onerror = reject;
       worker.postMessage({ file: item.file, config: watermarkConfig });
     });
+
+    const blob = new Blob([result.arrayBuffer], { type: 'image/jpeg' });
 
     worker.terminate();
 
