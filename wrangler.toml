@@ -1,6 +1,9 @@
 name = "shashin"
-pages_build_output_dir = "./dist"
+main = "./node_modules/@astrojs/cloudflare/dist/entrypoints/server.js"
 compatibility_date = "2026-04-15"
+
+[assets]
+directory = "./dist/client"
 
 [[r2_buckets]]
 binding = "GALARY_BUCKET"
