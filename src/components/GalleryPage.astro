@@ -13,13 +13,9 @@ const { title, heading, prefix } = Astro.props;
 
 let photos: { src: string; thumb: string; w: number; h: number }[] = [];
 let error: string | null = null;
-let debug: string = '';
 
 try {
-  debug += `env type: ${typeof env}\n`;
-  debug += `env keys: ${Object.keys(env).join(', ')}\n`;
   const bucket = env.GALARY_BUCKET;
-  debug += `bucket type: ${typeof bucket}\n`;
   if (bucket) {
     const listed = await bucket.list({ prefix });
     photos = listed.objects.map((obj) => {
@@ -32,16 +28,15 @@ try {
       };
     });
   } else {
-    debug += 'ERROR: GALARY_BUCKET is undefined\n';
+    error = 'GALARY_BUCKET is undefined';
   }
 } catch (e: any) {
-  debug += `EXCEPTION: ${e?.message || String(e)}\n`;
+  error = e?.message || String(e);
 }
 ---
 
 <Layout title={title}>
   <h1 class="text-3xl font-light mb-8">{heading}</h1>
-  {debug && <pre class="bg-neutral-800 p-4 rounded text-sm text-green-400 whitespace-pre-wrap mb-4">{debug}</pre>}
   {error && <p class="text-red-400 text-center py-8">{error}</p>}
   <PhotoGrid photos={photos} />
 </Layout>
