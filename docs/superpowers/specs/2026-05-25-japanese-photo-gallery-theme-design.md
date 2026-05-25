@@ -22,13 +22,15 @@ Layout.astro (统一骨架)
 ├── Google Fonts 加载
 ├── data-theme 属性控制全局主题
 ├── 背景纹理层 (CSS ::before 伪元素)
-├── 顶部导航 (CategoryNav)
-│   └── 四个分类标签：Lolita | JK | 地雷系 | 清楚系
-│   └── 当前分类高亮，其他弱化
+├── 全局导航栏
+│   ├── 网站标题/Logo
+│   └── 全局链接：写真、上传、管理
 ├── 主内容区
-│   └── 标签筛选栏 (TagFilter)
-│       └── 展示当前分类下所有可用标签，支持点击筛选
-│   └── 月度折叠分组（保留现有逻辑）
+│   ├── 分类导航 (CategoryNav)
+│   │   └── 四个分类标签：Lolita | JK | 地雷系 | 清楚系
+│   │   └── 当前分类高亮，其他弱化
+│   ├── 标签筛选栏 (TagFilter)
+│   │   └── 展示当前分类下所有可用标签，支持点击筛选
 │   └── PhotoGrid 瀑布流
 │       └── 照片卡片（根据主题变体渲染）
 │           └── 图片 + 标签展示 + 可选日期标签 + hover 效果
@@ -203,13 +205,15 @@ body::after {
 
 ## 组件设计
 
-### CategoryNav（顶部导航标签）
+### CategoryNav（分类导航标签）
 
 改造为风格化标签导航：
+- 基于从 R2 读取的 `categories` prop 动态渲染，通过映射表将目录名映射为显示标签和主题 key
 - 当前激活分类：填充主色背景 + 白色文字 + 该主题特有的标签形状
 - 其他分类：半透明/浅色背景 + 主色文字 + 统一形状
 - 标签形状随主题变化：Lolita 圆弧缎带顶、JK 圆角矩形、地雷系直角边框、清楚系气泡圆
 - 移动端保持横向滚动
+- 分类映射表支持中英文目录名（如「地雷系」→ jirai 主题）
 
 ### PhotoGrid（照片卡片）
 
@@ -220,9 +224,9 @@ body::after {
 - 边框：`1px solid var(--card-border)`（地雷系等需要明显边框的主题）
 - Lolita 卡片底部增加日期水印（✦ YYYY.MM.DD ✦）
 - JK 卡片增加小标签区域（樱花 emoji + 分类名）
-- **照片标签展示**：hover 时或卡片底部显示该照片的标签（小 pill 样式）
+- **照片标签展示**：所有卡片底部显示该照片的标签 pills（小圆角徽章样式）
 - hover 效果：轻微放大(scale 1.02) + 阴影加深
-- Lolita 卡片可添加轻微随机旋转（-2° ~ 2°），通过 inline style 或 CSS nth-child 实现
+- Lolita 卡片可添加轻微随机旋转（-2° ~ 2°），通过 photo 的 theme 字段判断
 
 ### TagFilter（标签筛选栏）
 
@@ -241,6 +245,8 @@ body::after {
 - 默认（无 category 参数或根路由）为 `lolita`
 - 引入 Google Fonts link
 - body 背景由 CSS 变量控制，移除现有的 `bg-neutral-900`
+- **保留全局导航**：网站标题 + 写真/上传/管理链接（样式适配当前主题）
+- 分类导航 CategoryNav 作为页面内容组件，在全局导航下方独立展示
 
 ## 技术实现
 
@@ -312,8 +318,9 @@ photo.tags = ['甜系', '室内', '粉白', 'bbd'];
 | `src/layouts/Layout.astro` | 修改 | 添加 data-theme、Google Fonts、背景纹理层 |
 | `src/components/CategoryNav.astro` | 修改 | 重新设计为风格化标签导航 |
 | `src/components/PhotoGrid.astro` | 修改 | 卡片样式改为 CSS 变量驱动，添加主题化装饰 |
-| `src/components/GalleryPage.astro` | 修改 | 移除精选逻辑，默认指向 Lolita，添加 theme 映射和标签聚合/筛选逻辑 |
+| `src/components/GalleryPage.astro` | 修改 | 默认指向 Lolita，添加 theme 映射、标签聚合/筛选逻辑，移除月度折叠分组 |
 | `src/components/TagFilter.astro` | 新增 | 标签筛选栏组件 |
+| `src/components/UploadManager.jsx` | 修改 | 添加上传时标签输入字段，写入 R2 customMetadata.tags |
 | `src/pages/index.astro` | 修改 | 默认加载 Lolita 内容 |
 
 ## 交互与动画
@@ -329,15 +336,18 @@ photo.tags = ['甜系', '室内', '粉白', 'bbd'];
 
 ## 边界情况
 
-1. **分类名称不匹配**：如果 R2 bucket 中的分类目录名与 theme key 不完全一致，需要建立映射表
+1. **分类名称不匹配**：通过 `categoryToTheme` 映射表支持中英文目录名
 2. **无标签照片**：标签筛选栏仍正常展示，只是该照片不会出现在任何标签筛选结果中
-3. **标签中文编码**：URL 参数中的中文标签需要 `encodeURIComponent` / `decodeURIComponent` 处理
-4. **字体加载失败**：设置系统字体回退栈：`font-family: 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif`
-5. **移动端适配**：导航标签和标签筛选栏保持横向滚动，卡片瀑布流在移动端保持 2 列
-6. **无照片状态**：保留现有「暂无照片」提示，样式适配当前主题
+3. **标签中文编码**：URL 参数中的中文标签通过 `encodeURIComponent` / `decodeURIComponent` 处理
+4. **现有照片无标签**：UploadManager 支持上传时打标签，但现有照片需要通过其他方式补标签（如管理后台批量编辑）
+5. **字体加载失败**：设置系统字体回退栈
+6. **移动端适配**：全局导航、分类导航和标签筛选栏保持横向滚动或响应式折叠，卡片瀑布流在移动端保持 2 列
+7. **无照片状态**：保留「暂无照片」提示，样式适配当前主题
 
 ## 未来扩展
 
-- 新增分类时，只需在 `themes.css` 中添加一套新的 `[data-theme="xxx"]` 变量定义
+- 新增分类时，只需在 `themes.css` 中添加一套新的 `[data-theme="xxx"]` 变量定义，并在映射表中添加对应关系
 - 可考虑为每个分类添加独立的封面头图区域
 - 可考虑添加分类切换时的淡入淡出过渡动画
+- 管理后台可扩展批量标签编辑功能，为现有照片补打标签
+- 标签系统可扩展为多标签同时筛选（`?tags=甜系,室内`）

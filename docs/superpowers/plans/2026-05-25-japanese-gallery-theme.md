@@ -203,7 +203,7 @@ git commit -m "feat: extend Tailwind theme with CSS custom properties"
 **Files:**
 - Modify: `src/layouts/Layout.astro`
 
-- [ ] **Step 1: 修改 Layout.astro，添加 data-theme、Google Fonts、背景层**
+- [ ] **Step 1: 修改 Layout.astro，添加 data-theme、Google Fonts、背景层，保留全局导航**
 
 ```astro
 ---
@@ -230,8 +230,18 @@ const { title, theme = 'lolita' } = Astro.props;
   />
 </head>
 <body class="min-h-screen" style="font-family: var(--font-body); color: var(--text); background-color: var(--bg);">
-  <nav class="px-6 py-4 flex gap-6" style="border-bottom: 1px solid var(--card-border);">
-    <slot name="nav" />
+  <!-- Global navigation -->
+  <nav class="px-6 py-4" style="border-bottom: 1px solid var(--card-border);">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-6">
+        <a href="/" class="text-lg font-semibold" style="font-family: var(--font-heading); color: var(--primary);">Tsukino Gallery</a>
+        <div class="flex gap-4 text-sm">
+          <a href="/" class="transition-opacity hover:opacity-80" style="color: var(--text);">写真</a>
+          <a href="/upload" class="transition-opacity hover:opacity-80" style="color: var(--text-muted);">上传</a>
+          <a href="/manage" class="transition-opacity hover:opacity-80" style="color: var(--text-muted);">管理</a>
+        </div>
+      </div>
+    </div>
   </nav>
   <main class="max-w-7xl mx-auto px-6 py-8">
     <slot />
@@ -268,7 +278,7 @@ git commit -m "feat: add data-theme, Google Fonts, and themed background to Layo
 **Files:**
 - Modify: `src/components/CategoryNav.astro`
 
-- [ ] **Step 1: 重写 CategoryNav，添加主题化标签样式**
+- [ ] **Step 1: 重写 CategoryNav，使用动态分类 + 映射表 + 主题化标签样式**
 
 ```astro
 ---
@@ -279,31 +289,42 @@ interface Props {
 }
 const { categories, active, basePath } = Astro.props;
 
-const categoryLabels: Record<string, string> = {
+// Map directory names to theme keys and display labels
+const categoryToTheme: Record<string, string> = {
+  lolita: 'lolita',
+  jk: 'jk',
+  jirai: 'jirai',
+  seiso: 'seiso',
+  '地雷系': 'jirai',
+  '清楚系': 'seiso',
+};
+
+const categoryToLabel: Record<string, string> = {
   lolita: '🎀 Lolita',
   jk: '🌸 JK',
   jirai: '🖤💗 地雷系',
   seiso: '🤍 清楚系',
+  '地雷系': '🖤💗 地雷系',
+  '清楚系': '🤍 清楚系',
 };
 
 function getLabel(cat: string): string {
-  return categoryLabels[cat] || cat;
+  return categoryToLabel[cat] || cat;
 }
 
-const allCategories = ['lolita', 'jk', 'jirai', 'seiso'];
+function getHref(cat: string): string {
+  return cat === 'lolita' ? basePath : `${basePath}?category=${encodeURIComponent(cat)}`;
+}
 ---
 
 <nav class="flex gap-2 mb-6 overflow-x-auto pb-2" style="font-family: var(--font-heading);">
-  {allCategories.map((cat) => {
+  {categories.map((cat) => {
     const isActive = active === cat;
-    const href = cat === 'lolita' ? basePath : `${basePath}?category=${encodeURIComponent(cat)}`;
     return (
       <a
-        href={href}
+        href={getHref(cat)}
         class={`px-4 py-2 text-sm whitespace-nowrap transition-all duration-300 ${
-          isActive
-            ? 'nav-active'
-            : 'nav-inactive'
+          isActive ? 'nav-active' : 'nav-inactive'
         }`}
         style={isActive
           ? 'background-color: var(--nav-active-bg); color: var(--nav-active-text);'
@@ -373,6 +394,8 @@ interface Photo {
   date?: string;
   category?: string;
   key?: string;
+  tags?: string[];
+  theme?: string;
 }
 interface Props {
   photos: Photo[];
@@ -390,7 +413,7 @@ const { photos, isAuthenticated = false } = Astro.props;
       return (
         <div
           class="masonry-item group relative block mb-4 overflow-hidden"
-          style={`background-color: var(--card-bg); border-radius: var(--card-radius); box-shadow: var(--card-shadow); ${photo.category === 'lolita' ? `transform: rotate(${rotation}deg);` : ''}`}
+          style={`background-color: var(--card-bg); border-radius: var(--card-radius); box-shadow: var(--card-shadow); ${photo.theme === 'lolita' ? `transform: rotate(${rotation}deg);` : ''}`}
         >
           <a
             href={photo.src}
@@ -423,20 +446,33 @@ const { photos, isAuthenticated = false } = Astro.props;
             </button>
           )}
           {/* Lolita date watermark */}
-          {photo.date && photo.category === 'lolita' && (
+          {photo.date && photo.theme === 'lolita' && (
             <div class="text-center py-2" style="font-family: var(--font-heading); color: var(--primary); font-size: 11px;">
               ✦ {photo.date} ✦
             </div>
           )}
           {/* JK tag */}
-          {photo.category === 'jk' && (
+          {photo.theme === 'jk' && (
             <div class="flex justify-between items-center px-3 py-2">
               <span style="font-size: 10px; color: var(--primary); background: var(--bg); padding: 2px 8px; border-radius: 10px;">🌸 {photo.category}</span>
               {photo.date && <span style="font-size: 10px; color: var(--text-muted);">{photo.date}</span>}
             </div>
           )}
-          {/* Default overlay for other themes */}
-          {photo.category !== 'lolita' && photo.category !== 'jk' && (
+          {/* Tags display - all themes */}
+          {photo.tags && photo.tags.length > 0 && (
+            <div class="flex flex-wrap gap-1 px-3 pb-3 pt-1">
+              {photo.tags.map((tag: string) => (
+                <span
+                  class="text-[10px] px-2 py-0.5"
+                  style="background-color: var(--nav-inactive-bg); color: var(--nav-inactive-text); border-radius: calc(var(--card-radius) / 2);"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+          {/* Default overlay for jirai/seiso hover */}
+          {(photo.theme === 'jirai' || photo.theme === 'seiso') && (
             <div class="absolute inset-x-0 bottom-0 p-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" style="background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);">
               {photo.date && <p class="text-xs text-white/90">{photo.date}</p>}
               {photo.category && <p class="text-[10px] text-white/60">{photo.category}</p>}
@@ -486,8 +522,13 @@ const { photos, isAuthenticated = false } = Astro.props;
     box-shadow: var(--card-shadow), 0 8px 24px rgba(0, 0, 0, 0.1);
   }
   /* Jirai theme card border glow */
+  /* Jirai theme card border glow */
   [data-theme="jirai"] .masonry-item {
     border: 1px solid var(--card-border);
+  }
+  /* Jirai theme delete button higher contrast */
+  [data-theme="jirai"] .delete-btn {
+    background-color: rgba(255, 105, 180, 0.4);
   }
   @media (min-width: 768px) {
     .masonry { columns: 3; }
@@ -502,7 +543,7 @@ const { photos, isAuthenticated = false } = Astro.props;
 
 ```bash
 git add src/components/PhotoGrid.astro
-git commit -m "feat: redesign PhotoGrid with themed card decorations"
+git commit -m "feat: redesign PhotoGrid with themed cards and tag display"
 ```
 
 ---
@@ -651,6 +692,7 @@ try {
         h: parseInt(obj.customMetadata?.height || '3000', 10),
         key: obj.key,
         category: cat,
+        theme: categoryToTheme[cat] || 'lolita',
         tags: obj.customMetadata?.tags ? String(obj.customMetadata.tags).split(',').map((t: string) => t.trim()).filter(Boolean) : [],
         date: uploaded ? uploaded.toLocaleDateString('zh-CN') : '',
         yearMonth: uploaded ? `${uploaded.getFullYear()}-${String(uploaded.getMonth() + 1).padStart(2, '0')}` : '',
@@ -675,16 +717,6 @@ photos.forEach((p) => {
 });
 const allTags = Array.from(allTagsSet).sort();
 
-let groupedPhotos: Record<string, typeof filteredPhotos> = {};
-if (category === 'all') {
-  filteredPhotos.forEach((p: any) => {
-    const ym = p.yearMonth || '未知时间';
-    if (!groupedPhotos[ym]) groupedPhotos[ym] = [];
-    groupedPhotos[ym].push(p);
-  });
-}
-const sortedMonths = Object.keys(groupedPhotos).sort().reverse();
-
 const displayHeading = category === 'lolita' ? 'Lolita 写真' : heading;
 ---
 
@@ -694,22 +726,7 @@ const displayHeading = category === 'lolita' ? 'Lolita 写真' : heading;
   <TagFilter tags={allTags} activeTag={activeTag} basePath={Astro.url.pathname} category={category} />
   {error && <p class="text-center py-8" style="color: #ef4444;">{error}</p>}
 
-  {category === 'all' ? (
-    <div class="space-y-8">
-      {sortedMonths.map((month) => (
-        <details open class="group">
-          <summary class="flex items-center gap-2 cursor-pointer text-lg font-medium mb-4 select-none list-none" style="color: var(--text);">
-            <span class="inline-block transition-transform duration-200 group-open:rotate-90 text-sm">▶</span>
-            {month}
-            <span style="color: var(--text-muted);" class="text-sm">({groupedPhotos[month].length} 张)</span>
-          </summary>
-          <PhotoGrid photos={groupedPhotos[month]} isAuthenticated={isAuthenticated} />
-        </details>
-      ))}
-    </div>
-  ) : (
-    <PhotoGrid photos={filteredPhotos} isAuthenticated={isAuthenticated} />
-  )}
+  <PhotoGrid photos={filteredPhotos} isAuthenticated={isAuthenticated} />
 </Layout>
 ```
 
@@ -722,38 +739,53 @@ git commit -m "feat: add theme mapping, tag aggregation and filtering"
 
 ---
 
-## Task 8: 改造 PhotoGrid 添加标签展示
+## Task 8: 为 UploadManager 添加标签输入支持
 
 **Files:**
-- Modify: `src/components/PhotoGrid.astro`
+- Modify: `src/components/UploadManager.jsx`
 
-- [ ] **Step 1: 修改 PhotoGrid，为照片卡片添加标签 pills 展示**
+- [ ] **Step 1: 在 UploadManager 中添加标签输入字段，上传时写入 customMetadata**
 
-在 `PhotoGrid.astro` 中，找到 `masonry-item` div 的关闭标签之前，添加标签展示区域（在所有主题的照片卡片上都展示标签）：
+在 UploadManager 的表单区域添加标签输入：
 
-在 `</div>` (masonry-item 的关闭标签) 之前插入：
+```jsx
+// 在文件选择区域附近添加标签输入
+<div className="mb-4">
+  <label className="block text-sm mb-1" style={{ color: 'var(--text-muted)' }}>标签（逗号分隔）</label>
+  <input
+    type="text"
+    value={tags}
+    onChange={(e) => setTags(e.target.value)}
+    placeholder="例如：甜系,室内,粉白,bbd"
+    className="w-full px-3 py-2 rounded border"
+    style={{ 
+      backgroundColor: 'var(--card-bg)', 
+      borderColor: 'var(--card-border)', 
+      color: 'var(--text)' 
+    }}
+  />
+</div>
+```
 
-```astro
-          {/* Tags display */}
-          {photo.tags && photo.tags.length > 0 && (
-            <div class="flex flex-wrap gap-1 px-3 pb-3 pt-1">
-              {photo.tags.map((tag: string) => (
-                <span
-                  class="text-[10px] px-2 py-0.5"
-                  style="background-color: var(--nav-inactive-bg); color: var(--nav-inactive-text); border-radius: calc(var(--card-radius) / 2);"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
+在 React state 中添加：
+```jsx
+const [tags, setTags] = useState('');
+```
+
+在上传的 `customMetadata` 中添加 tags：
+```js
+metadata: {
+  width: String(file.width || 2000),
+  height: String(file.height || 3000),
+  tags: tags.trim(),
+}
 ```
 
 - [ ] **Step 2: Commit**
 
 ```bash
-git add src/components/PhotoGrid.astro
-git commit -m "feat: add tag pills display on photo cards"
+git add src/components/UploadManager.jsx
+git commit -m "feat: add tags input to UploadManager"
 ```
 
 ---
@@ -797,7 +829,8 @@ git commit -m "feat: set homepage default to Lolita theme"
 | 主题化照片卡片 | Task 5 |
 | 分类→主题映射 | Task 7 |
 | 标签聚合与筛选 | Task 6 + Task 7 |
-| 标签展示 (TagFilter + 卡片 pills) | Task 6 + Task 8 |
+| 标签展示 (TagFilter + 卡片 pills) | Task 5 (合并) |
+| 上传标签支持 | Task 8 |
 | 默认 Lolita 首页 | Task 7 + Task 9 |
 | Lolita 拍立得边框+日期 | Task 5 |
 | 地雷系霓虹发光 | Task 1 (shadow) + Task 5 (border) |
@@ -839,4 +872,5 @@ git commit -m "feat: set homepage default to Lolita theme"
    - 点击标签筛选照片，URL 参数更新
    - 照片卡片底部展示标签 pills
    - 「全部」按钮清除筛选
-9. **移动端**：导航和标签筛选栏可横向滚动，瀑布流为 2 列
+9. **上传标签**：上传表单支持输入逗号分隔的标签，写入 R2 customMetadata
+10. **移动端**：全局导航、分类导航和标签筛选栏可横向滚动，瀑布流为 2 列
