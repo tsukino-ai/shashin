@@ -6,10 +6,17 @@ export default function PhotoGridManage({ photos, selectedKeys, onToggleSelect }
   const handleDelete = async (key) => {
     if (!confirm('确定删除这张图片？')) return;
     try {
-      await fetch(`/api/upload?key=${encodeURIComponent(key)}`, { method: 'DELETE' });
+      const res = await fetch(`/api/upload?key=${encodeURIComponent(key)}`, {
+        method: 'DELETE',
+        cache: 'no-store',
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
       window.location.reload();
     } catch (err) {
-      alert('删除失败: ' + String(err));
+      alert('删除失败: ' + (err?.message || String(err)));
     }
   };
 

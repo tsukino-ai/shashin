@@ -69,16 +69,43 @@ export default function ManageDashboard({ photos }) {
     if (selectedKeys.size === 0) return;
     setIsDeleting(true);
     const keys = Array.from(selectedKeys);
-    for (const key of keys) {
-      try {
-        await fetch(`/api/upload?key=${encodeURIComponent(key)}`, { method: 'DELETE' });
-      } catch (err) {
-        console.error('Delete failed:', key, err);
+
+    async function deleteOne(key) {
+      const res = await fetch(`/api/upload?key=${encodeURIComponent(key)}`, {
+        method: 'DELETE',
+        cache: 'no-store',
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `HTTP ${res.status}`);
       }
     }
+
+    // 并发控制：每批 5 个，避免一次性发太多请求
+    const batchSize = 5;
+    let success = 0;
+    let failed = 0;
+
+    for (let i = 0; i < keys.length; i += batchSize) {
+      const batch = keys.slice(i, i + batchSize);
+      const results = await Promise.allSettled(batch.map((key) => deleteOne(key)));
+      results.forEach((result, idx) => {
+        if (result.status === 'fulfilled') {
+          success++;
+        } else {
+          console.error('Delete failed:', batch[idx], result.reason);
+          failed++;
+        }
+      });
+    }
+
     setIsDeleting(false);
     setShowDeleteModal(false);
     setSelectedKeys(new Set());
+
+    if (failed > 0) {
+      alert(`删除完成：成功 ${success} 张，失败 ${failed} 张`);
+    }
     window.location.reload();
   };
 
