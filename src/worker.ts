@@ -1,5 +1,5 @@
 import { handle } from '@astrojs/cloudflare/handler';
-import { handleUpload, handleOptions } from './api/upload';
+import { handleUpload, handleOptions, handleDelete } from './api/upload';
 import type { Env } from './types/env';
 
 export default {
@@ -9,6 +9,9 @@ export default {
     if (url.pathname === '/api/upload') {
       if (request.method === 'POST') {
         return handleUpload(request, env);
+      }
+      if (request.method === 'DELETE') {
+        return handleDelete(request, env);
       }
       if (request.method === 'OPTIONS') {
         return handleOptions();

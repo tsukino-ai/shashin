@@ -6,7 +6,7 @@ interface UploadEnv {
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': 'https://shashin.tsukino.dev',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'POST, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Upload-Metadata',
 };
 
@@ -68,6 +68,23 @@ export async function handleUpload(request: Request, env: UploadEnv): Promise<Re
   } catch (err: unknown) {
     console.error('Upload error:', err);
     const message = err instanceof Error ? err.message : 'Upload failed';
+    return jsonResponse({ success: false, error: message }, 500);
+  }
+}
+
+export async function handleDelete(request: Request, env: UploadEnv): Promise<Response> {
+  try {
+    const url = new URL(request.url);
+    const key = url.searchParams.get('key');
+    if (!key) {
+      return jsonResponse({ success: false, error: 'Missing key parameter' }, 400);
+    }
+
+    await env.GALARY_BUCKET.delete(key);
+    return jsonResponse({ success: true }, 200);
+  } catch (err: unknown) {
+    console.error('Delete error:', err);
+    const message = err instanceof Error ? err.message : 'Delete failed';
     return jsonResponse({ success: false, error: message }, 500);
   }
 }

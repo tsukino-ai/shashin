@@ -46,6 +46,7 @@ try {
         thumb: publicUrl,
         w: 2000,
         h: 3000,
+        key: obj.key,
         category: cat,
         date: uploaded ? uploaded.toLocaleDateString('zh-CN') : '',
         yearMonth: uploaded ? `${uploaded.getFullYear()}-${String(uploaded.getMonth() + 1).padStart(2, '0')}` : '',

@@ -9,6 +9,7 @@ interface Photo {
   alt?: string;
   date?: string;
   category?: string;
+  key?: string;
 }
 interface Props {
   photos: Photo[];
@@ -21,33 +22,68 @@ const { photos } = Astro.props;
 ) : (
   <div class="masonry" id="gallery">
     {photos.map((photo, i) => (
-      <a
-        href={photo.src}
-        data-pswp-width={photo.w}
-        data-pswp-height={photo.h}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="masonry-item group relative block mb-4 overflow-hidden rounded-lg bg-neutral-800"
-      >
-        <img
-          src={photo.thumb}
-          alt={photo.alt || `照片 ${i + 1}`}
-          loading="lazy"
-          width={photo.w}
-          height={photo.h}
-          class="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-[1.03] opacity-0"
-          onload="this.classList.remove('opacity-0'); this.classList.add('opacity-100')"
-        />
-        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+      <div class="masonry-item group relative block mb-4 overflow-hidden rounded-lg bg-neutral-800">
+        <a
+          href={photo.src}
+          data-pswp-width={photo.w}
+          data-pswp-height={photo.h}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="block"
+        >
+          <img
+            src={photo.thumb}
+            alt={photo.alt || `照片 ${i + 1}`}
+            loading="lazy"
+            width={photo.w}
+            height={photo.h}
+            class="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-[1.03] opacity-0"
+            onload="this.classList.remove('opacity-0'); this.classList.add('opacity-100')"
+          />
+        </a>
+        {photo.key && (
+          <button
+            type="button"
+            data-key={photo.key}
+            class="delete-btn absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-full bg-black/50 text-white/80 opacity-0 transition-opacity duration-300 group-hover:opacity-100 hover:bg-red-600 hover:text-white"
+            title="删除"
+          >
+            ×
+          </button>
+        )}
+        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none">
           {photo.date && <p class="text-xs text-white/90">{photo.date}</p>}
           {photo.category && <p class="text-[10px] text-white/60">{photo.category}</p>}
         </div>
-      </a>
+      </div>
     ))}
   </div>
 )}
 
 <PhotoSwipeInit />
+
+<script>
+  document.querySelectorAll('.delete-btn').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const key = (e.currentTarget as HTMLButtonElement).dataset.key;
+      if (!key) return;
+      if (!confirm('确定删除这张图片？')) return;
+      try {
+        const res = await fetch(`/api/upload?key=${encodeURIComponent(key)}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          window.location.reload();
+        } else {
+          alert('删除失败: ' + (data.error || '未知错误'));
+        }
+      } catch (err) {
+        alert('删除失败: ' + String(err));
+      }
+    });
+  });
+</script>
 
 <style>
   .masonry {
