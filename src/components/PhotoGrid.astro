@@ -51,16 +51,6 @@ const { photos, isAuthenticated = false } = Astro.props;
               style="border-radius: calc(var(--card-radius) - 2px);"
             />
           </a>
-          {photo.key && (
-            <button
-              type="button"
-              data-key={photo.key}
-              class="delete-btn absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-full bg-black/50 text-white/80 opacity-0 transition-opacity duration-300 group-hover:opacity-100 hover:bg-red-600 hover:text-white"
-              title="删除"
-            >
-              ×
-            </button>
-          )}
           {/* Lolita date watermark */}
           {photo.date && photo.theme === 'lolita' && (
             <div class="text-center py-2" style="font-family: var(--font-heading); color: var(--primary); font-size: 11px;">
@@ -102,29 +92,6 @@ const { photos, isAuthenticated = false } = Astro.props;
 
 <PhotoSwipeInit />
 
-<script>
-  document.querySelectorAll('.delete-btn').forEach((btn) => {
-    btn.addEventListener('click', async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const key = (e.currentTarget as HTMLButtonElement).dataset.key;
-      if (!key) return;
-      if (!confirm('确定删除这张图片？')) return;
-      try {
-        const res = await fetch(`/api/upload?key=${encodeURIComponent(key)}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (data.success) {
-          window.location.reload();
-        } else {
-          alert('删除失败: ' + (data.error || '未知错误'));
-        }
-      } catch (err) {
-        alert('删除失败: ' + String(err));
-      }
-    });
-  });
-</script>
-
 <style>
   .masonry {
     columns: 2;
@@ -140,10 +107,6 @@ const { photos, isAuthenticated = false } = Astro.props;
   /* Jirai theme card border glow */
   [data-theme="jirai"] .masonry-item {
     border: 1px solid var(--card-border);
-  }
-  /* Jirai theme delete button higher contrast */
-  [data-theme="jirai"] .delete-btn {
-    background-color: rgba(255, 105, 180, 0.4);
   }
   @media (min-width: 768px) {
     .masonry { columns: 3; }
