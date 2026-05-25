@@ -1,1 +1,15 @@
+/* src/styles/global.css */
 @import "tailwindcss";
+@import "./themes.css";
+
+@theme {
+  --color-theme-bg: var(--bg);
+  --color-theme-text: var(--text);
+  --color-theme-text-muted: var(--text-muted);
+  --color-theme-primary: var(--primary);
+  --color-theme-accent: var(--accent);
+  --color-theme-card: var(--card-bg);
+  --color-theme-card-border: var(--card-border);
+  --font-theme-heading: var(--font-heading);
+  --font-theme-body: var(--font-body);
+}
