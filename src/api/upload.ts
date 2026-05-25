@@ -23,8 +23,8 @@ export async function handleUpload(request: Request, env: UploadEnv): Promise<Re
 
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
-    const categoryRaw = (formData.get('category') as string) || 'default';
-    const category = categoryRaw.replace(/[^a-zA-Z0-9\u4e00-\u9fa5_-]/g, '') || 'default';
+    const categoryRaw = (formData.get('category') as string) || '';
+    const category = categoryRaw.replace(/[^a-zA-Z0-9\u4e00-\u9fa5_-]/g, '');
     const widthRaw = (formData.get('width') as string) || '2000';
     const heightRaw = (formData.get('height') as string) || '3000';
     const tagsRaw = (formData.get('tags') as string) || '';
@@ -48,7 +48,7 @@ export async function handleUpload(request: Request, env: UploadEnv): Promise<Re
 
     const timestamp = Date.now();
     const uuid = crypto.randomUUID().split('-')[0];
-    const key = `photos/${category}/${timestamp}-${uuid}.jpg`;
+    const key = category ? `photos/${category}/${timestamp}-${uuid}.jpg` : `photos/${timestamp}-${uuid}.jpg`;
 
     await env.GALARY_BUCKET.put(key, file.stream(), {
       httpMetadata: {

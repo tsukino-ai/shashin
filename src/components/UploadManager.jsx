@@ -1,6 +1,14 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import WatermarkConfig from './WatermarkConfig';
 
+const CATEGORY_OPTIONS = [
+  { value: '', label: '— 无分类 —' },
+  { value: 'lolita', label: '🎀 Lolita' },
+  { value: 'jk', label: '🌸 JK' },
+  { value: 'jirai', label: '🖤💗 地雷系' },
+  { value: 'seiso', label: '🤍 清楚系' },
+];
+
 export default function UploadManager() {
   const [files, setFiles] = useState([]);
   const [watermarkConfig, setWatermarkConfig] = useState(null);
@@ -81,7 +89,7 @@ export default function UploadManager() {
 
     const formData = new FormData();
     formData.append('file', blob, item.name.replace(/\.[^.]+$/, '.jpg'));
-    formData.append('category', item.category || 'default');
+    formData.append('category', item.category || '');
     formData.append('width', String(result.width || 2000));
     formData.append('height', String(result.height || 3000));
     formData.append('tags', item.tags || '');
@@ -184,6 +192,39 @@ export default function UploadManager() {
         />
       </div>
 
+      {/* Batch settings toolbar */}
+      {files.length > 0 && (
+        <div className="bg-neutral-800/50 rounded-lg p-3 flex flex-wrap items-center gap-3">
+          <span className="text-sm text-neutral-400">批量设置：</span>
+          <select
+            value=""
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val !== '') {
+                setFiles((prev) => prev.map((f) => (f.status === 'pending' ? { ...f, category: val } : f)));
+                e.target.value = '';
+              }
+            }}
+            className="bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm"
+          >
+            <option value="">分类…</option>
+            {CATEGORY_OPTIONS.slice(1).map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          <input
+            type="text"
+            placeholder="标签…"
+            className="bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm w-28"
+            onChange={(e) => {
+              const val = e.target.value;
+              setFiles((prev) => prev.map((f) => (f.status === 'pending' ? { ...f, tags: val } : f)));
+            }}
+          />
+          <span className="text-xs text-neutral-500 ml-auto">仅作用于待处理的文件</span>
+        </div>
+      )}
+
       {/* File List */}
       {files.length > 0 && (
         <div className="space-y-3">
@@ -211,13 +252,15 @@ export default function UploadManager() {
                 </div>
               </div>
 
-              <input
-                type="text"
-                placeholder="分类"
+              <select
                 value={item.category || ''}
                 onChange={(e) => setCategory(item.id, e.target.value)}
-                className="bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm w-20"
-              />
+                className="bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm w-32"
+              >
+                {CATEGORY_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
               <input
                 type="text"
                 placeholder="标签（逗号分隔）"
