@@ -1,4 +1,4 @@
-export default function PhotoList({ photos, selectedKeys, onToggleSelect, onSelectKeys, onDeselectKeys }) {
+export default function PhotoList({ photos, selectedKeys, onToggleSelect, onSelectKeys, onDeselectKeys, onEdit }) {
   const handleCopy = (src) => {
     navigator.clipboard.writeText(src);
   };
@@ -42,6 +42,7 @@ export default function PhotoList({ photos, selectedKeys, onToggleSelect, onSele
             <th className="px-4 py-3 text-left">缩略图</th>
             <th className="px-4 py-3 text-left">文件名</th>
             <th className="px-4 py-3 text-left">分类</th>
+            <th className="px-4 py-3 text-left">标签</th>
             <th className="px-4 py-3 text-left">可见性</th>
             <th className="px-4 py-3 text-left">日期</th>
             <th className="px-4 py-3 text-left">大小</th>
@@ -84,6 +85,19 @@ export default function PhotoList({ photos, selectedKeys, onToggleSelect, onSele
                 )}
               </td>
               <td className="px-4 py-3">
+                {photo.tags?.length > 0 ? (
+                  <div className="flex max-w-[180px] flex-wrap gap-1">
+                    {photo.tags.map((tag) => (
+                      <span key={tag} className="rounded-full bg-neutral-700 px-2 py-0.5 text-xs text-neutral-200">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-xs text-neutral-600">-</span>
+                )}
+              </td>
+              <td className="px-4 py-3">
                 <span className={`text-xs ${photo.visibility === 'private' ? 'text-yellow-400' : 'text-green-400'}`}>
                   {photo.visibility === 'private' ? '私有' : '公开'}
                 </span>
@@ -92,6 +106,13 @@ export default function PhotoList({ photos, selectedKeys, onToggleSelect, onSele
               <td className="px-4 py-3 text-neutral-400">{photo.sizeDisplay}</td>
               <td className="px-4 py-3">
                 <div className="flex gap-2">
+                  <button
+                    onClick={() => onEdit(photo)}
+                    className="text-xs text-emerald-400 hover:text-emerald-300"
+                    title="编辑分类和标签"
+                  >
+                    编辑
+                  </button>
                   <button
                     onClick={() => handleCopy(photo.src)}
                     className="text-xs text-blue-400 hover:text-blue-300"

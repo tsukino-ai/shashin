@@ -344,6 +344,7 @@ export default function ManageDashboard({ photos }) {
       )}
 
       <EditPhotoModal
+        key={editingPhoto?.key || 'closed'}
         photo={editingPhoto}
         isSaving={isSavingEdit}
         error={editError}

@@ -1,4 +1,4 @@
-export default function PhotoGridManage({ photos, selectedKeys, onToggleSelect }) {
+export default function PhotoGridManage({ photos, selectedKeys, onToggleSelect, onEdit }) {
   const handleCopy = (src) => {
     navigator.clipboard.writeText(src);
   };
@@ -49,11 +49,29 @@ export default function PhotoGridManage({ photos, selectedKeys, onToggleSelect }
             {/* Hover overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
               <div className="flex items-center justify-between">
-                <div className="text-xs text-white/80 truncate max-w-[60%]">
-                  {photo.category && <span className="mr-2">{photo.category}</span>}
-                  <span className="text-white/50">{photo.sizeDisplay}</span>
+                <div className="min-w-0 flex-1 text-xs text-white/80">
+                  <div className="truncate">
+                    {photo.category && <span className="mr-2">{photo.category}</span>}
+                    <span className="text-white/50">{photo.sizeDisplay}</span>
+                  </div>
+                  {photo.tags?.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {photo.tags.slice(0, 3).map((tag) => (
+                        <span key={tag} className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] text-white">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-2">
+                  <button
+                    onClick={() => onEdit(photo)}
+                    className="h-8 rounded-full bg-emerald-500/70 px-3 text-xs text-white backdrop-blur hover:bg-emerald-500"
+                    title="编辑分类和标签"
+                  >
+                    编辑
+                  </button>
                   <button
                     onClick={() => handleCopy(photo.src)}
                     className="w-8 h-8 rounded-full bg-white/15 hover:bg-white/30 flex items-center justify-center text-white text-xs backdrop-blur"
