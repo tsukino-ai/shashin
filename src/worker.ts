@@ -8,7 +8,20 @@ export default {
 
     if (url.pathname === '/api/upload') {
       if (request.method === 'POST') {
-        return handleUpload(request, env);
+        const response = await handleUpload(request, env);
+        if (response.ok) {
+          try {
+            const cloned = response.clone();
+            const data = await cloned.json();
+            if (data.key) {
+              const thumbUrl = `https://cdn.tsukino.dev/cdn-cgi/image/w=400,quality=75,fit=scale-down/${data.key}`;
+              ctx.waitUntil(
+                fetch(thumbUrl, { cf: { cacheEverything: true } }).catch(() => {})
+              );
+            }
+          } catch { /* ignore warmup errors */ }
+        }
+        return response;
       }
       if (request.method === 'DELETE') {
         return handleDelete(request, env);

@@ -59,8 +59,10 @@ export default function PhotoList({ photos, selectedKeys, onToggleSelect }) {
                   <img
                     src={photo.thumb}
                     alt=""
-                    className="w-14 h-14 object-cover rounded-lg bg-neutral-700"
+                    className="w-14 h-14 object-cover rounded-lg bg-neutral-700 opacity-0 transition-opacity duration-300"
                     loading="lazy"
+                    decoding="async"
+                    onLoad={(e) => e.currentTarget.classList.remove('opacity-0')}
                   />
                 </a>
               </td>

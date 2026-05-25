@@ -51,7 +51,7 @@ try {
       const uploaded = obj.uploaded ? new Date(obj.uploaded) : null;
       return {
         src: publicUrl,
-        thumb: `/api/image?key=${encodeURIComponent(obj.key)}&width=400`,
+        thumb: `https://cdn.tsukino.dev/cdn-cgi/image/w=400,quality=75,fit=scale-down/${obj.key}`,
         w: parseInt(obj.customMetadata?.width || '2000', 10),
         h: parseInt(obj.customMetadata?.height || '3000', 10),
         key: obj.key,

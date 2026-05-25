@@ -22,8 +22,10 @@ export default function PhotoGridManage({ photos, selectedKeys, onToggleSelect }
               <img
                 src={photo.thumb}
                 alt=""
-                className="w-full h-auto object-cover"
+                className="w-full h-auto object-cover opacity-0 transition-opacity duration-300"
                 loading="lazy"
+                decoding="async"
+                onLoad={(e) => e.currentTarget.classList.remove('opacity-0')}
               />
             </a>
 

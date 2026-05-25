@@ -38,15 +38,16 @@ const { photos, isAuthenticated = false } = Astro.props;
             data-caption={`${photo.category || ''}${photo.category && photo.date ? ' · ' : ''}${photo.date || ''}`}
             target="_blank"
             rel="noopener noreferrer"
-            class="block"
+            class="block img-placeholder"
           >
             <img
               src={photo.thumb}
               alt={photo.alt || `照片 ${i + 1}`}
               loading="lazy"
+              decoding="async"
               width={photo.w}
               height={photo.h}
-              class="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-[1.02] opacity-0"
+              class="w-full h-auto object-cover transition-opacity duration-500 transition-transform duration-500 group-hover:scale-[1.02] opacity-0"
               onload="this.classList.remove('opacity-0'); this.classList.add('opacity-100')"
               style="border-radius: calc(var(--card-radius) - 2px);"
             />
@@ -103,6 +104,17 @@ const { photos, isAuthenticated = false } = Astro.props;
   }
   .masonry-item:hover {
     box-shadow: var(--card-shadow), 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
+  .img-placeholder {
+    background-color: color-mix(in srgb, var(--card-bg), var(--text-muted) 12%);
+    animation: img-skeleton 1.6s ease-in-out infinite;
+  }
+  .img-placeholder img.opacity-100 {
+    animation: none;
+  }
+  @keyframes img-skeleton {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
   }
   /* Jirai theme card border glow */
   [data-theme="jirai"] .masonry-item {
