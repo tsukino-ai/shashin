@@ -43,7 +43,7 @@ const { photos, isAuthenticated = false } = Astro.props;
             onload="this.classList.remove('opacity-0'); this.classList.add('opacity-100')"
           />
         </a>
-        {isAuthenticated && photo.key && (
+        {photo.key && (
           <button
             type="button"
             data-key={photo.key}
