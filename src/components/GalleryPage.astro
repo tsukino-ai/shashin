@@ -12,8 +12,15 @@ export interface Props {
 
 const { title, heading, prefix } = Astro.props;
 const category = Astro.url.searchParams.get('category') || 'all';
-const authEmail = Astro.request.headers.get('cf-access-authenticated-user-email');
+const authEmail = Astro.request.headers.get('cf-access-authenticated-user-email')
+  || Astro.request.headers.get('CF-Access-Authenticated-User-Email');
 const isAuthenticated = !!authEmail;
+
+// Debug: list all headers
+const allHeaders = Array.from(Astro.request.headers.entries())
+  .filter(([k]) => k.toLowerCase().includes('access') || k.toLowerCase().includes('auth') || k.toLowerCase().includes('email'))
+  .map(([k, v]) => `${k}: ${v}`)
+  .join('\n');
 
 let photos: any[] = [];
 let categories: string[] = [];
@@ -73,6 +80,9 @@ const sortedMonths = Object.keys(groupedPhotos).sort().reverse();
 ---
 
 <Layout title={title}>
+  {allHeaders && (
+    <pre class="text-[10px] text-neutral-600 mb-2 whitespace-pre-wrap">{allHeaders}</pre>
+  )}
   <h1 class="text-3xl font-light mb-4">{heading}</h1>
   <CategoryNav categories={categories} active={category} basePath={Astro.url.pathname} />
   {error && <p class="text-red-400 text-center py-8">{error}</p>}
