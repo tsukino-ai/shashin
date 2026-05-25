@@ -31,6 +31,7 @@ export default function UploadManager() {
         status: 'pending', // pending | processing | uploading | done | error
         progress: 0,
         visibility: 'public',
+        category: '',
         error: null,
       })),
     ]);
@@ -42,6 +43,10 @@ export default function UploadManager() {
 
   const setVisibility = (id, visibility) => {
     setFiles((prev) => prev.map((f) => (f.id === id ? { ...f, visibility } : f)));
+  };
+
+  const setCategory = (id, category) => {
+    setFiles((prev) => prev.map((f) => (f.id === id ? { ...f, category } : f)));
   };
 
   const processAndUpload = async (item) => {
@@ -203,6 +208,13 @@ export default function UploadManager() {
                 </div>
               </div>
 
+              <input
+                type="text"
+                placeholder="分类"
+                value={item.category || ''}
+                onChange={(e) => setCategory(item.id, e.target.value)}
+                className="bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm w-20"
+              />
               <select
                 value={item.visibility}
                 onChange={(e) => setVisibility(item.id, e.target.value)}

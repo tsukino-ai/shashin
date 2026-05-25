@@ -1,0 +1,25 @@
+---
+interface Props {
+  categories: string[];
+  active: string;
+  basePath: string;
+}
+const { categories, active, basePath } = Astro.props;
+---
+
+<nav class="flex gap-2 mb-6 overflow-x-auto pb-2">
+  <a
+    href={basePath}
+    class={`px-3 py-1 rounded-full text-sm whitespace-nowrap transition ${active === 'all' ? 'bg-blue-600 text-white' : 'bg-neutral-800 text-neutral-400 hover:text-white'}`}
+  >
+    全部
+  </a>
+  {categories.map((cat) => (
+    <a
+      href={`${basePath}?category=${encodeURIComponent(cat)}`}
+      class={`px-3 py-1 rounded-full text-sm whitespace-nowrap transition ${active === cat ? 'bg-blue-600 text-white' : 'bg-neutral-800 text-neutral-400 hover:text-white'}`}
+    >
+      {cat}
+    </a>
+  ))}
+</nav>
