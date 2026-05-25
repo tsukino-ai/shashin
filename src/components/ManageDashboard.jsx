@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import EditPhotoModal from './EditPhotoModal';
 import PhotoList from './PhotoList';
 import PhotoGridManage from './PhotoGridManage';
 
@@ -10,14 +11,20 @@ export default function ManageDashboard({ photos }) {
   const [sortBy, setSortBy] = useState('date-desc');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [photoItems, setPhotoItems] = useState(photos);
+  const [editingPhoto, setEditingPhoto] = useState(null);
+  const [editError, setEditError] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   const categories = useMemo(() => {
-    const set = new Set(photos.map((p) => p.category).filter(Boolean));
+    const set = new Set(photoItems.map((p) => p.category).filter(Boolean));
     return Array.from(set).sort();
-  }, [photos]);
+  }, [photoItems]);
 
   const filteredPhotos = useMemo(() => {
-    let result = [...photos];
+    let result = [...photoItems];
     if (filterCategory !== 'all') {
       result = result.filter((p) => p.category === filterCategory);
     }
@@ -34,9 +41,9 @@ export default function ManageDashboard({ photos }) {
       result.sort((a, b) => a.key.localeCompare(b.key));
     }
     return result;
-  }, [photos, filterCategory, filterVisibility, sortBy]);
+  }, [photoItems, filterCategory, filterVisibility, sortBy]);
 
-  const totalSize = useMemo(() => photos.reduce((sum, p) => sum + p.size, 0), [photos]);
+  const totalSize = useMemo(() => photoItems.reduce((sum, p) => sum + p.size, 0), [photoItems]);
   const totalSizeDisplay = useMemo(() => {
     if (totalSize < 1024 * 1024) return (totalSize / 1024).toFixed(1) + ' KB';
     return (totalSize / (1024 * 1024)).toFixed(1) + ' MB';
@@ -45,8 +52,8 @@ export default function ManageDashboard({ photos }) {
   const thisMonthCount = useMemo(() => {
     const now = new Date();
     const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    return photos.filter((p) => p.date && p.date.startsWith(ym)).length;
-  }, [photos]);
+    return photoItems.filter((p) => p.date && p.date.startsWith(ym)).length;
+  }, [photoItems]);
 
   const toggleSelect = useCallback((key) => {
     setSelectedKeys((prev) => {
@@ -80,6 +87,60 @@ export default function ManageDashboard({ photos }) {
       return next;
     });
   }, []);
+
+  const openEditModal = useCallback((photo) => {
+    setEditingPhoto(photo);
+    setEditError('');
+  }, []);
+
+  const closeEditModal = useCallback(() => {
+    if (isSavingEdit) return;
+    setEditingPhoto(null);
+    setEditError('');
+  }, [isSavingEdit]);
+
+  const handleSaveEdit = useCallback(async ({ category, tags }) => {
+    if (!editingPhoto || isSavingEdit) return;
+    setIsSavingEdit(true);
+    setEditError('');
+    try {
+      const res = await fetch(`/api/upload?key=${encodeURIComponent(editingPhoto.key)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        body: JSON.stringify({ category, tags }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      const updatedPhoto = data.photo;
+      if (!updatedPhoto?.key) {
+        throw new Error('服务器返回缺少更新后的照片信息');
+      }
+
+      if (mountedRef.current) {
+        setPhotoItems((prev) => prev.map((photo) => (
+          photo.key === editingPhoto.key ? updatedPhoto : photo
+        )));
+      }
+      if (mountedRef.current) {
+        setSelectedKeys((prev) => {
+          const next = new Set(prev);
+          if (next.has(editingPhoto.key)) {
+            next.delete(editingPhoto.key);
+            next.add(updatedPhoto.key);
+          }
+          return next;
+        });
+      }
+      if (mountedRef.current) setEditingPhoto(null);
+    } catch (err) {
+      if (mountedRef.current) setEditError(err?.message || '保存失败');
+    } finally {
+      if (mountedRef.current) setIsSavingEdit(false);
+    }
+  }, [editingPhoto, isSavingEdit]);
 
   const handleBatchDelete = async () => {
     if (selectedKeys.size === 0) return;
@@ -142,7 +203,7 @@ export default function ManageDashboard({ photos }) {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-neutral-800 rounded-lg p-4">
-          <div className="text-2xl font-semibold">{photos.length}</div>
+          <div className="text-2xl font-semibold">{photoItems.length}</div>
           <div className="text-sm text-neutral-500">总张数</div>
         </div>
         <div className="bg-neutral-800 rounded-lg p-4">
@@ -237,9 +298,21 @@ export default function ManageDashboard({ photos }) {
 
       {/* Content */}
       {viewMode === 'list' ? (
-        <PhotoList photos={filteredPhotos} selectedKeys={selectedKeys} onToggleSelect={toggleSelect} onSelectKeys={selectKeys} onDeselectKeys={deselectKeys} />
+        <PhotoList
+          photos={filteredPhotos}
+          selectedKeys={selectedKeys}
+          onToggleSelect={toggleSelect}
+          onSelectKeys={selectKeys}
+          onDeselectKeys={deselectKeys}
+          onEdit={openEditModal}
+        />
       ) : (
-        <PhotoGridManage photos={filteredPhotos} selectedKeys={selectedKeys} onToggleSelect={toggleSelect} />
+        <PhotoGridManage
+          photos={filteredPhotos}
+          selectedKeys={selectedKeys}
+          onToggleSelect={toggleSelect}
+          onEdit={openEditModal}
+        />
       )}
 
       {/* Delete modal */}
@@ -269,6 +342,14 @@ export default function ManageDashboard({ photos }) {
           </div>
         </div>
       )}
+
+      <EditPhotoModal
+        photo={editingPhoto}
+        isSaving={isSavingEdit}
+        error={editError}
+        onClose={closeEditModal}
+        onSave={handleSaveEdit}
+      />
     </div>
   );
 }
