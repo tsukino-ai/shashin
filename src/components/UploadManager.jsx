@@ -30,7 +30,6 @@ export default function UploadManager() {
         size: file.size,
         status: 'pending', // pending | processing | uploading | done | error
         progress: 0,
-        visibility: 'public',
         category: '',
         tags: '',
         error: null,
@@ -40,10 +39,6 @@ export default function UploadManager() {
 
   const removeFile = (id) => {
     setFiles((prev) => prev.filter((f) => f.id !== id));
-  };
-
-  const setVisibility = (id, visibility) => {
-    setFiles((prev) => prev.map((f) => (f.id === id ? { ...f, visibility } : f)));
   };
 
   const setCategory = (id, category) => {
@@ -86,7 +81,6 @@ export default function UploadManager() {
 
     const formData = new FormData();
     formData.append('file', blob, item.name.replace(/\.[^.]+$/, '.jpg'));
-    formData.append('visibility', item.visibility);
     formData.append('category', item.category || 'default');
     formData.append('width', String(result.width || 2000));
     formData.append('height', String(result.height || 3000));
@@ -231,15 +225,6 @@ export default function UploadManager() {
                 onChange={(e) => setTags(item.id, e.target.value)}
                 className="bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm w-32"
               />
-              <select
-                value={item.visibility}
-                onChange={(e) => setVisibility(item.id, e.target.value)}
-                className="bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm"
-              >
-                <option value="public">公开</option>
-                <option value="private">私有</option>
-              </select>
-
               <button
                 onClick={() => removeFile(item.id)}
                 className="text-neutral-500 hover:text-red-400 text-sm"

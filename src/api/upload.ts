@@ -23,10 +23,8 @@ export async function handleUpload(request: Request, env: UploadEnv): Promise<Re
 
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
-    const visibilityRaw = (formData.get('visibility') as string) || 'public';
-    const visibility = ['public', 'private'].includes(visibilityRaw) ? visibilityRaw : 'public';
     const categoryRaw = (formData.get('category') as string) || 'default';
-    const category = categoryRaw.replace(/[^a-zA-Z0-9_-]/g, '') || 'default';
+    const category = categoryRaw.replace(/[^a-zA-Z0-9\u4e00-\u9fa5_-]/g, '') || 'default';
     const widthRaw = (formData.get('width') as string) || '2000';
     const heightRaw = (formData.get('height') as string) || '3000';
     const tagsRaw = (formData.get('tags') as string) || '';
@@ -48,10 +46,9 @@ export async function handleUpload(request: Request, env: UploadEnv): Promise<Re
       return jsonResponse({ success: false, error: 'File too large (max 25MB)' }, 413);
     }
 
-    const prefix = visibility === 'private' ? 'private/' : 'public/';
     const timestamp = Date.now();
     const uuid = crypto.randomUUID().split('-')[0];
-    const key = `${prefix}${category}/${timestamp}-${uuid}.jpg`;
+    const key = `photos/${category}/${timestamp}-${uuid}.jpg`;
 
     await env.GALARY_BUCKET.put(key, file.stream(), {
       httpMetadata: {
@@ -61,7 +58,7 @@ export async function handleUpload(request: Request, env: UploadEnv): Promise<Re
       customMetadata: {
         originalName: file.name,
         uploadedAt: new Date().toISOString(),
-        visibility: visibility,
+
         width: widthRaw,
         height: heightRaw,
         tags: tagsRaw,
