@@ -32,6 +32,7 @@ export default function UploadManager() {
         progress: 0,
         visibility: 'public',
         category: '',
+        tags: '',
         error: null,
       })),
     ]);
@@ -47,6 +48,10 @@ export default function UploadManager() {
 
   const setCategory = (id, category) => {
     setFiles((prev) => prev.map((f) => (f.id === id ? { ...f, category } : f)));
+  };
+
+  const setTags = (id, tags) => {
+    setFiles((prev) => prev.map((f) => (f.id === id ? { ...f, tags } : f)));
   };
 
   const processAndUpload = async (item) => {
@@ -85,6 +90,7 @@ export default function UploadManager() {
     formData.append('category', item.category || 'default');
     formData.append('width', String(result.width || 2000));
     formData.append('height', String(result.height || 3000));
+    formData.append('tags', item.tags || '');
 
     const xhr = new XMLHttpRequest();
     xhr.timeout = 120000; // 2 minutes
@@ -217,6 +223,13 @@ export default function UploadManager() {
                 value={item.category || ''}
                 onChange={(e) => setCategory(item.id, e.target.value)}
                 className="bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm w-20"
+              />
+              <input
+                type="text"
+                placeholder="标签（逗号分隔）"
+                value={item.tags || ''}
+                onChange={(e) => setTags(item.id, e.target.value)}
+                className="bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm w-32"
               />
               <select
                 value={item.visibility}
