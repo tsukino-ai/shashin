@@ -3,6 +3,7 @@ import { env } from 'cloudflare:workers';
 import Layout from '../layouts/Layout.astro';
 import PhotoGrid from './PhotoGrid.astro';
 import CategoryNav from './CategoryNav.astro';
+import TagFilter from './TagFilter.astro';
 
 export interface Props {
   title: string;
@@ -11,10 +12,22 @@ export interface Props {
 }
 
 const { title, heading, prefix } = Astro.props;
-const category = Astro.url.searchParams.get('category') || 'all';
+const category = Astro.url.searchParams.get('category') || 'lolita';
+const activeTag = Astro.url.searchParams.get('tag');
 const authEmail = Astro.request.headers.get('cf-access-authenticated-user-email')
   || Astro.request.headers.get('CF-Access-Authenticated-User-Email');
 const isAuthenticated = !!authEmail;
+
+// Category to theme mapping
+const categoryToTheme: Record<string, string> = {
+  lolita: 'lolita',
+  jk: 'jk',
+  jirai: 'jirai',
+  seiso: 'seiso',
+  '地雷系': 'jirai',
+  '清楚系': 'seiso',
+};
+const theme = categoryToTheme[category] || 'lolita';
 
 let photos: any[] = [];
 let categories: string[] = [];
@@ -36,7 +49,7 @@ try {
     });
     categories = Array.from(catSet).sort();
 
-    const targetPrefix = category === 'all' ? prefix : `${prefix}${category}/`;
+    const targetPrefix = `${prefix}${category}/`;
     const listed = await bucket.list({ prefix: targetPrefix });
     photos = (listed.objects || []).map((obj) => {
       const publicUrl = `https://cdn.tsukino.dev/${obj.key}`;
@@ -51,8 +64,9 @@ try {
         h: parseInt(obj.customMetadata?.height || '3000', 10),
         key: obj.key,
         category: cat,
+        theme: categoryToTheme[cat] || 'lolita',
+        tags: obj.customMetadata?.tags ? String(obj.customMetadata.tags).split(',').map((t: string) => t.trim()).filter(Boolean) : [],
         date: uploaded ? uploaded.toLocaleDateString('zh-CN') : '',
-        yearMonth: uploaded ? `${uploaded.getFullYear()}-${String(uploaded.getMonth() + 1).padStart(2, '0')}` : '',
       };
     });
   } else {
@@ -62,36 +76,25 @@ try {
   error = e?.message || String(e);
 }
 
-let groupedPhotos: Record<string, typeof photos> = {};
-if (category === 'all') {
-  photos.forEach((p) => {
-    const ym = p.yearMonth || '未知时间';
-    if (!groupedPhotos[ym]) groupedPhotos[ym] = [];
-    groupedPhotos[ym].push(p);
-  });
-}
-const sortedMonths = Object.keys(groupedPhotos).sort().reverse();
+// Filter photos by active tag
+const filteredPhotos = activeTag
+  ? photos.filter((p) => p.tags.includes(activeTag))
+  : photos;
+
+// Aggregate all tags in current category
+const allTagsSet = new Set<string>();
+photos.forEach((p) => {
+  p.tags.forEach((t: string) => allTagsSet.add(t));
+});
+const allTags = Array.from(allTagsSet).sort();
+
+const displayHeading = category === 'lolita' ? 'Lolita 写真' : heading;
 ---
 
-<Layout title={title}>
-  <h1 class="text-3xl font-light mb-4">{heading}</h1>
+<Layout title={title} theme={theme}>
+  <h1 class="text-3xl font-light mb-4" style="font-family: var(--font-heading); color: var(--text);">{displayHeading}</h1>
   <CategoryNav categories={categories} active={category} basePath={Astro.url.pathname} />
-  {error && <p class="text-red-400 text-center py-8">{error}</p>}
-
-  {category === 'all' ? (
-    <div class="space-y-8">
-      {sortedMonths.map((month) => (
-        <details open class="group">
-          <summary class="flex items-center gap-2 cursor-pointer text-lg font-medium text-neutral-300 mb-4 select-none list-none">
-            <span class="inline-block transition-transform duration-200 group-open:rotate-90 text-sm">▶</span>
-            {month}
-            <span class="text-sm text-neutral-500">({groupedPhotos[month].length} 张)</span>
-          </summary>
-          <PhotoGrid photos={groupedPhotos[month]} isAuthenticated={isAuthenticated} />
-        </details>
-      ))}
-    </div>
-  ) : (
-    <PhotoGrid photos={photos} isAuthenticated={isAuthenticated} />
-  )}
+  <TagFilter tags={allTags} activeTag={activeTag} basePath={Astro.url.pathname} category={category} />
+  {error && <p class="text-center py-8" style="color: #ef4444;">{error}</p>}
+  <PhotoGrid photos={filteredPhotos} isAuthenticated={isAuthenticated} />
 </Layout>
