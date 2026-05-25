@@ -1,0 +1,121 @@
+/* src/styles/themes.css */
+
+/* ========== Base (Lolita - default) ========== */
+:root,
+[data-theme="lolita"] {
+  --bg: #f5e6d3;
+  --bg-texture: rgba(139, 69, 19, 0.04);
+  --text: #5c3a1e;
+  --text-muted: #8b7355;
+  --primary: #8b4513;
+  --accent: #c17817;
+  --card-bg: #fffbf5;
+  --card-border: #e8d5c0;
+  --card-radius: 4px;
+  --card-shadow: 0 4px 12px rgba(139, 69, 19, 0.12);
+  --nav-active-bg: #8b4513;
+  --nav-active-text: #f5e6d3;
+  --nav-inactive-bg: #e8d5c0;
+  --nav-inactive-text: #5c3a1e;
+  --font-heading: 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  --font-body: 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+}
+
+/* ========== JK ========== */
+[data-theme="jk"] {
+  --bg: #e8f4f8;
+  --bg-texture: rgba(44, 95, 124, 0.03);
+  --text: #2c5f7c;
+  --text-muted: #5ba3c0;
+  --primary: #2c5f7c;
+  --accent: #5ba3c0;
+  --card-bg: #ffffff;
+  --card-border: #c0dce8;
+  --card-radius: 8px;
+  --card-shadow: 0 2px 8px rgba(44, 95, 124, 0.1);
+  --nav-active-bg: #2c5f7c;
+  --nav-active-text: #ffffff;
+  --nav-inactive-bg: #c0dce8;
+  --nav-inactive-text: #2c5f7c;
+  --font-heading: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', sans-serif;
+  --font-body: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', sans-serif;
+}
+
+/* ========== 地雷系 (Jirai) ========== */
+[data-theme="jirai"] {
+  --bg: #1a0a12;
+  --bg-texture: rgba(255, 105, 180, 0.02);
+  --text: #e8c8d8;
+  --text-muted: #b080a0;
+  --primary: #ff69b4;
+  --accent: #ff1493;
+  --card-bg: #2d1a22;
+  --card-border: #ff69b4;
+  --card-radius: 0px;
+  --card-shadow: 0 0 16px rgba(255, 105, 180, 0.2);
+  --nav-active-bg: #ff69b4;
+  --nav-active-text: #1a0a12;
+  --nav-inactive-bg: #2d1a22;
+  --nav-inactive-text: #ff69b4;
+  --font-heading: 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', sans-serif;
+  --font-body: 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', sans-serif;
+}
+
+/* ========== 清楚系 (Seiso) ========== */
+[data-theme="seiso"] {
+  --bg: #fff5f7;
+  --bg-texture: rgba(212, 165, 165, 0.03);
+  --text: #8a7070;
+  --text-muted: #b8a0a0;
+  --primary: #d4a5a5;
+  --accent: #e8c4c4;
+  --card-bg: #ffffff;
+  --card-border: #f0d5d8;
+  --card-radius: 16px;
+  --card-shadow: 0 2px 12px rgba(212, 165, 165, 0.1);
+  --nav-active-bg: #d4a5a5;
+  --nav-active-text: #ffffff;
+  --nav-inactive-bg: #ffffff;
+  --nav-inactive-text: #d4a5a5;
+  --font-heading: 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', sans-serif;
+  --font-body: 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', sans-serif;
+}
+
+/* ========== Background textures ========== */
+[data-theme="lolita"] body::after {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 35px,
+    var(--primary) 35px,
+    var(--primary) 70px
+  );
+  opacity: 0.04;
+}
+
+[data-theme="jk"] body::after {
+  background-image: radial-gradient(
+    circle at 30% 30%,
+    var(--primary) 0.5px,
+    transparent 0.5px
+  );
+  background-size: 40px 40px;
+  opacity: 0.03;
+}
+
+[data-theme="jirai"] body::after {
+  background-image: radial-gradient(
+      circle at 20% 50%,
+      var(--primary) 1px,
+      transparent 1px
+    ),
+    radial-gradient(circle at 80% 80%, var(--primary) 1px, transparent 1px);
+  background-size: 60px 60px;
+  opacity: 0.02;
+}
+
+[data-theme="seiso"] body::after {
+  background: radial-gradient(ellipse at 30% 20%, #ffd0d8 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 80%, #d0e8ff 0%, transparent 50%);
+  opacity: 0.03;
+}
