@@ -1,0 +1,65 @@
+---
+import { env } from 'cloudflare:workers';
+import Layout from '../layouts/Layout.astro';
+import ManageDashboard from '../components/ManageDashboard.jsx';
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+const bucket = env.GALARY_BUCKET;
+let photos: any[] = [];
+
+if (bucket) {
+  const prefixes = ['public/', 'private/'];
+  for (const prefix of prefixes) {
+    const listed = await bucket.list({ prefix });
+    for (const obj of listed.objects || []) {
+      const publicUrl = `https://cdn.tsukino.dev/${obj.key}`;
+      const relativeKey = obj.key.slice(prefix.length);
+      const parts = relativeKey.split('/');
+      const category = parts.length > 1 ? parts[0] : '';
+      const uploaded = obj.uploaded ? new Date(obj.uploaded) : null;
+      photos.push({
+        key: obj.key,
+        src: publicUrl,
+        thumb: `/api/image?key=${encodeURIComponent(obj.key)}&width=200`,
+        category,
+        date: uploaded ? uploaded.toISOString() : '',
+        dateDisplay: uploaded ? uploaded.toLocaleDateString('zh-CN') : '',
+        size: obj.size,
+        sizeDisplay: formatSize(obj.size),
+        visibility: prefix === 'private/' ? 'private' : 'public',
+      });
+    }
+  }
+}
+
+// Sort by date desc by default
+photos.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+---
+
+<Layout title="管理后台">
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <h1 class="text-3xl font-light mb-8">图片管理</h1>
+    <ManageDashboard photos={photos} client:load />
+  </div>
+</Layout>
+
+<style is:global>
+  .masonry {
+    columns: 2;
+    column-gap: 1rem;
+  }
+  .masonry-item {
+    break-inside: avoid;
+  }
+  @media (min-width: 768px) {
+    .masonry { columns: 3; }
+  }
+  @media (min-width: 1024px) {
+    .masonry { columns: 4; }
+  }
+</style>
