@@ -1,4 +1,5 @@
 import type { R2Bucket } from '@cloudflare/workers-types';
+import { parseImageDimensions } from '../lib/parseImageDimensions';
 
 interface UploadEnv {
   GALARY_BUCKET: R2Bucket;
@@ -29,13 +30,19 @@ export async function handleUpload(request: Request, env: UploadEnv): Promise<Re
     const file = formData.get('file') as File | null;
     const categoryRaw = (formData.get('category') as string) || '';
     const category = categoryRaw.replace(/[^a-zA-Z0-9\u4e00-\u9fa5_-]/g, '');
-    const widthRaw = (formData.get('width') as string) || '2000';
-    const heightRaw = (formData.get('height') as string) || '3000';
     const tagsRaw = (formData.get('tags') as string) || '';
 
     if (!file) {
       return jsonResponse({ success: false, error: 'No file provided' }, 400, corsHeaders);
     }
+
+    // Parse dimensions server-side from binary header (most reliable)
+    // Read first 32KB which contains all image header info
+    const headerSlice = file.slice(0, 32768);
+    const headerBuffer = await headerSlice.arrayBuffer();
+    const parsedDims = parseImageDimensions(new Uint8Array(headerBuffer));
+    const widthRaw = parsedDims ? String(parsedDims.width) : ((formData.get('width') as string) || '2000');
+    const heightRaw = parsedDims ? String(parsedDims.height) : ((formData.get('height') as string) || '3000');
 
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {

@@ -69,8 +69,8 @@
     });
 
     // Fix aspect ratio: when the actual image dimensions differ from declared data-pswp-width/height,
-    // update the slide's logical dimensions so PhotoSwipe can correctly fit the image to viewport.
-    // Do NOT touch slide.content.setDisplayedSize — that's PhotoSwipe's internal layout concern.
+    // update the slide's logical dimensions and force a full re-layout so PhotoSwipe correctly fits
+    // the image to viewport. This handles cases where R2 customMetadata width/height is missing or wrong.
     lightbox.on('change', () => {
       const slide = lightbox.pswp.currSlide;
       if (!slide || !slide.content || !slide.content.element) return;
@@ -82,14 +82,20 @@
         const realH = img.naturalHeight;
         // Only update if actual size differs from declared size
         if (slide.width !== realW || slide.height !== realH) {
+          // Update both slide and content dimensions
           slide.width = realW;
           slide.height = realH;
+          slide.content.width = realW;
+          slide.content.height = realH;
+          // Recalculate zoom levels based on correct dimensions
           if (slide.calculateSize) {
             slide.calculateSize();
           }
-          if (slide.isActive && lightbox.pswp.updateSize) {
-            lightbox.pswp.updateSize(true);
-          }
+          // Force full re-layout: reset resolution, re-apply initial zoom/pan, update content size
+          slide.currentResolution = 0;
+          slide.zoomAndPanToInitial();
+          slide.applyCurrentZoomPan();
+          slide.updateContentSize(true);
         }
       };
 
