@@ -1,13 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import WatermarkConfig from './WatermarkConfig';
-
-const CATEGORY_OPTIONS = [
-  { value: '', label: '— 无分类 —' },
-  { value: 'lolita', label: '🎀 Lolita' },
-  { value: 'jk', label: '🌸 JK' },
-  { value: 'jirai', label: '🖤💗 地雷系' },
-  { value: 'seiso', label: '🤍 清楚系' },
-];
+import { CATEGORY_OPTIONS } from '../lib/photoMetadata';
 
 const CONCURRENCY = 2;
 
