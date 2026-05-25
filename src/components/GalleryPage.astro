@@ -13,13 +13,13 @@ export interface Props {
 }
 
 const { title, heading, prefix } = Astro.props;
-const category = Astro.url.searchParams.get('category') || 'lolita';
+const category = Astro.url.searchParams.get('category') || 'all';
 const activeTag = Astro.url.searchParams.get('tag');
 const authEmail = Astro.request.headers.get('cf-access-authenticated-user-email')
   || Astro.request.headers.get('CF-Access-Authenticated-User-Email');
 const isAuthenticated = !!authEmail;
 
-const theme = categoryToTheme[category] || 'lolita';
+const theme = categoryToTheme[category] || (category === 'all' ? 'lolita' : 'lolita');
 
 let photos: any[] = [];
 let categories: string[] = [];
@@ -41,7 +41,7 @@ try {
     });
     categories = Array.from(catSet).sort();
 
-    const targetPrefix = `${prefix}${category}/`;
+    const targetPrefix = category === 'all' ? prefix : `${prefix}${category}/`;
     const listed = await bucket.list({ prefix: targetPrefix });
     photos = (listed.objects || []).map((obj) => {
       const publicUrl = `https://cdn.tsukino.dev/${obj.key}`;
@@ -80,7 +80,7 @@ photos.forEach((p) => {
 });
 const allTags = Array.from(allTagsSet).sort();
 
-const displayHeading = category === 'lolita' ? 'Lolita 写真' : heading;
+const displayHeading = category === 'all' ? heading : (category === 'lolita' ? 'Lolita 写真' : heading);
 ---
 
 <Layout title={title} theme={theme}>

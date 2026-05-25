@@ -13,11 +13,23 @@ function getLabel(cat: string): string {
 }
 
 function getHref(cat: string): string {
-  return cat === 'lolita' ? basePath : `${basePath}?category=${encodeURIComponent(cat)}`;
+  return cat === 'all' ? basePath : `${basePath}?category=${encodeURIComponent(cat)}`;
 }
 ---
 
 <nav class="flex gap-2 mb-6 overflow-x-auto pb-2" style="font-family: var(--font-heading);">
+  <a
+    href={basePath}
+    class={`px-4 py-2 text-sm whitespace-nowrap transition-all duration-300 ${
+      active === 'all' ? 'nav-active' : 'nav-inactive'
+    }`}
+    style={active === 'all'
+      ? 'background-color: var(--nav-active-bg); color: var(--nav-active-text);'
+      : 'background-color: var(--nav-inactive-bg); color: var(--nav-inactive-text);'
+    }
+  >
+    全部
+  </a>
   {categories.map((cat) => {
     const isActive = active === cat;
     return (
