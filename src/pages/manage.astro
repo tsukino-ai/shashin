@@ -41,7 +41,7 @@ if (bucket) {
 photos.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 ---
 
-<Layout title="管理后台">
+<Layout title="管理后台" theme="admin">
   <div class="max-w-7xl mx-auto px-4 py-8">
     <h1 class="text-3xl font-light mb-8">图片管理</h1>
     <ManageDashboard photos={photos} client:load />

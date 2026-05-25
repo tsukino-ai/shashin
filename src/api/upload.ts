@@ -29,6 +29,7 @@ export async function handleUpload(request: Request, env: UploadEnv): Promise<Re
     const category = categoryRaw.replace(/[^a-zA-Z0-9_-]/g, '') || 'default';
     const widthRaw = (formData.get('width') as string) || '2000';
     const heightRaw = (formData.get('height') as string) || '3000';
+    const tagsRaw = (formData.get('tags') as string) || '';
 
     if (!file) {
       return jsonResponse({ success: false, error: 'No file provided' }, 400);
@@ -63,6 +64,7 @@ export async function handleUpload(request: Request, env: UploadEnv): Promise<Re
         visibility: visibility,
         width: widthRaw,
         height: heightRaw,
+        tags: tagsRaw,
       },
     });
 

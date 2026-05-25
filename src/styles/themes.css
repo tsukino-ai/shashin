@@ -119,3 +119,23 @@
     radial-gradient(ellipse at 70% 80%, #d0e8ff 0%, transparent 50%);
   opacity: 0.03;
 }
+
+/* ========== Admin (neutral dark) ========== */
+[data-theme="admin"] {
+  --bg: #171717;
+  --bg-texture: rgba(255, 255, 255, 0.01);
+  --text: #e5e5e5;
+  --text-muted: #a3a3a3;
+  --primary: #525252;
+  --accent: #737373;
+  --card-bg: #262626;
+  --card-border: #404040;
+  --card-radius: 8px;
+  --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --nav-active-bg: #525252;
+  --nav-active-text: #ffffff;
+  --nav-inactive-bg: #262626;
+  --nav-inactive-text: #a3a3a3;
+  --font-heading: system-ui, -apple-system, sans-serif;
+  --font-body: system-ui, -apple-system, sans-serif;
+}

@@ -4,6 +4,7 @@ import Layout from '../layouts/Layout.astro';
 import PhotoGrid from './PhotoGrid.astro';
 import CategoryNav from './CategoryNav.astro';
 import TagFilter from './TagFilter.astro';
+import { categoryToTheme } from '../lib/categoryMap';
 
 export interface Props {
   title: string;
@@ -18,15 +19,6 @@ const authEmail = Astro.request.headers.get('cf-access-authenticated-user-email'
   || Astro.request.headers.get('CF-Access-Authenticated-User-Email');
 const isAuthenticated = !!authEmail;
 
-// Category to theme mapping
-const categoryToTheme: Record<string, string> = {
-  lolita: 'lolita',
-  jk: 'jk',
-  jirai: 'jirai',
-  seiso: 'seiso',
-  '地雷系': 'jirai',
-  '清楚系': 'seiso',
-};
 const theme = categoryToTheme[category] || 'lolita';
 
 let photos: any[] = [];
