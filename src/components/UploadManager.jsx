@@ -82,6 +82,9 @@ export default function UploadManager() {
     const formData = new FormData();
     formData.append('file', blob, item.name.replace(/\.[^.]+$/, '.jpg'));
     formData.append('visibility', item.visibility);
+    formData.append('category', item.category || 'default');
+    formData.append('width', String(result.width || 2000));
+    formData.append('height', String(result.height || 3000));
 
     const xhr = new XMLHttpRequest();
     xhr.timeout = 120000; // 2 minutes

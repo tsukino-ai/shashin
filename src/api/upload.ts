@@ -27,6 +27,8 @@ export async function handleUpload(request: Request, env: UploadEnv): Promise<Re
     const visibility = ['public', 'private'].includes(visibilityRaw) ? visibilityRaw : 'public';
     const categoryRaw = (formData.get('category') as string) || 'default';
     const category = categoryRaw.replace(/[^a-zA-Z0-9_-]/g, '') || 'default';
+    const widthRaw = (formData.get('width') as string) || '2000';
+    const heightRaw = (formData.get('height') as string) || '3000';
 
     if (!file) {
       return jsonResponse({ success: false, error: 'No file provided' }, 400);
@@ -59,6 +61,8 @@ export async function handleUpload(request: Request, env: UploadEnv): Promise<Re
         originalName: file.name,
         uploadedAt: new Date().toISOString(),
         visibility: visibility,
+        width: widthRaw,
+        height: heightRaw,
       },
     });
 

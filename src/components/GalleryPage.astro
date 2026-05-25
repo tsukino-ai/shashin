@@ -46,8 +46,8 @@ try {
       return {
         src: publicUrl,
         thumb: `/api/image?key=${encodeURIComponent(obj.key)}&width=400`,
-        w: 2000,
-        h: 3000,
+        w: parseInt(obj.customMetadata?.width || '2000', 10),
+        h: parseInt(obj.customMetadata?.height || '3000', 10),
         key: obj.key,
         category: cat,
         date: uploaded ? uploaded.toLocaleDateString('zh-CN') : '',
