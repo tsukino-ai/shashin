@@ -2,6 +2,9 @@
   import PhotoSwipeLightbox from 'photoswipe/lightbox';
   import 'photoswipe/style.css';
 
+  const closeSVG = '<svg aria-hidden="true" class="pswp__icn" viewBox="0 0 32 32" width="32" height="32"><path d="M8 8l16 16M24 8L8 24" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>';
+  const arrowSVG = '<svg aria-hidden="true" class="pswp__icn" viewBox="0 0 32 32" width="32" height="32"><path d="M20 6L10 16l10 10" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
   function initPhotoSwipe() {
     const gallery = document.getElementById('gallery');
     if (!gallery) return;
@@ -10,6 +13,59 @@
       gallery: '#gallery',
       children: 'a',
       pswpModule: () => import('photoswipe'),
+      mainClass: 'pswp--custom-theme',
+      bgOpacity: 0.96,
+      showHideAnimationType: 'zoom',
+      showAnimationDuration: 500,
+      hideAnimationDuration: 400,
+      zoomAnimationDuration: 300,
+      closeSVG,
+      arrowPrevSVG: arrowSVG,
+      arrowNextSVG: arrowSVG,
+      padding: { top: 20, bottom: 80, left: 20, right: 20 },
+    });
+
+    // Register custom caption
+    lightbox.on('uiRegister', function () {
+      lightbox.pswp.ui.registerElement({
+        name: 'custom-caption',
+        order: 9,
+        isButton: false,
+        appendTo: 'root',
+        html: '',
+        onInit: (el, pswp) => {
+          lightbox.pswp.on('change', () => {
+            const currSlide = lightbox.pswp.currSlide;
+            if (!currSlide || !currSlide.data) {
+              el.innerHTML = '';
+              return;
+            }
+            const elData = currSlide.data.element;
+            let captionHTML = '';
+            if (elData) {
+              const caption = elData.getAttribute('data-caption');
+              if (caption) captionHTML = caption;
+            }
+            el.innerHTML = captionHTML ? `<div class="pswp__caption-inner">${captionHTML}</div>` : '';
+          });
+        },
+      });
+    });
+
+    // Dynamic easing: ease-out-back for open, ease-in-out for zoom, ease-in-back for close
+    const backEasing = {
+      out: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+      inOut: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+      in: 'cubic-bezier(0.32, 0, 0.67, 0)',
+    };
+    lightbox.on('firstUpdate', () => {
+      lightbox.pswp.options.easing = backEasing.out;
+    });
+    lightbox.on('initialZoomInEnd', () => {
+      lightbox.pswp.options.easing = backEasing.inOut;
+    });
+    lightbox.on('close', () => {
+      lightbox.pswp.options.easing = backEasing.in;
     });
 
     lightbox.init();
@@ -18,7 +74,6 @@
 
   let lightbox = initPhotoSwipe();
 
-  // Re-init on astro:page-load if View Transitions are ever enabled
   document.addEventListener('astro:page-load', () => {
     if (lightbox) {
       lightbox.destroy();
@@ -26,3 +81,113 @@
     lightbox = initPhotoSwipe();
   });
 </script>
+
+<style is:global>
+  .pswp--custom-theme {
+    --pswp-bg: #0f0f0f;
+    --pswp-icon-color: rgba(255, 255, 255, 0.7);
+    --pswp-icon-color-secondary: rgba(255, 255, 255, 0.3);
+    --pswp-icon-stroke-width: 0;
+  }
+
+  .pswp--custom-theme .pswp__img {
+    border-radius: 10px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+
+  .pswp--custom-theme .pswp__counter {
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    color: rgba(255, 255, 255, 0.5);
+    top: 20px;
+    left: 20px;
+  }
+
+  .pswp--custom-theme .pswp__button--close {
+    top: 16px;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    transition: background 0.2s;
+  }
+  .pswp--custom-theme .pswp__button--close:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .pswp--custom-theme .pswp__button--arrow {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    margin-top: -26px;
+    transition: background 0.2s, transform 0.2s;
+  }
+  .pswp--custom-theme .pswp__button--arrow:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(1.08);
+  }
+  .pswp--custom-theme .pswp__button--arrow--prev {
+    left: 16px;
+  }
+  .pswp--custom-theme .pswp__button--arrow--next {
+    right: 16px;
+  }
+
+  .pswp--custom-theme .pswp__custom-caption {
+    position: absolute;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .pswp--custom-theme .pswp__caption-inner {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 100px;
+    padding: 8px 20px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.75);
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+  }
+
+  .pswp--custom-theme .pswp__preloader {
+    top: 50%;
+    left: 50%;
+    margin: -12px 0 0 -12px;
+  }
+  .pswp--custom-theme .pswp__preloader__icn {
+    opacity: 0.4;
+    width: 24px;
+    height: 24px;
+  }
+
+  @media (max-width: 640px) {
+    .pswp--custom-theme .pswp__img {
+      border-radius: 6px;
+    }
+    .pswp--custom-theme .pswp__button--arrow {
+      width: 40px;
+      height: 40px;
+      margin-top: -20px;
+    }
+    .pswp--custom-theme .pswp__button--arrow--prev {
+      left: 8px;
+    }
+    .pswp--custom-theme .pswp__button--arrow--next {
+      right: 8px;
+    }
+    .pswp--custom-theme .pswp__caption-inner {
+      font-size: 12px;
+      padding: 6px 14px;
+    }
+  }
+</style>

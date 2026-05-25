@@ -28,6 +28,7 @@ const { photos, isAuthenticated = false } = Astro.props;
           href={photo.src}
           data-pswp-width={photo.w}
           data-pswp-height={photo.h}
+          data-caption={`${photo.category || ''}${photo.category && photo.date ? ' · ' : ''}${photo.date || ''}`}
           target="_blank"
           rel="noopener noreferrer"
           class="block"
