@@ -13,8 +13,9 @@ interface Photo {
 }
 interface Props {
   photos: Photo[];
+  isAuthenticated?: boolean;
 }
-const { photos } = Astro.props;
+const { photos, isAuthenticated = false } = Astro.props;
 ---
 
 {photos.length === 0 ? (
@@ -41,7 +42,7 @@ const { photos } = Astro.props;
             onload="this.classList.remove('opacity-0'); this.classList.add('opacity-100')"
           />
         </a>
-        {photo.key && (
+        {isAuthenticated && photo.key && (
           <button
             type="button"
             data-key={photo.key}

@@ -12,6 +12,8 @@ export interface Props {
 
 const { title, heading, prefix } = Astro.props;
 const category = Astro.url.searchParams.get('category') || 'all';
+const authEmail = Astro.request.headers.get('cf-access-authenticated-user-email');
+const isAuthenticated = !!authEmail;
 
 let photos: any[] = [];
 let categories: string[] = [];
@@ -84,11 +86,11 @@ const sortedMonths = Object.keys(groupedPhotos).sort().reverse();
             {month}
             <span class="text-sm text-neutral-500">({groupedPhotos[month].length} 张)</span>
           </summary>
-          <PhotoGrid photos={groupedPhotos[month]} />
+          <PhotoGrid photos={groupedPhotos[month]} isAuthenticated={isAuthenticated} />
         </details>
       ))}
     </div>
   ) : (
-    <PhotoGrid photos={photos} />
+    <PhotoGrid photos={photos} isAuthenticated={isAuthenticated} />
   )}
 </Layout>
