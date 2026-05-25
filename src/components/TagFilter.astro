@@ -1,0 +1,51 @@
+---
+interface Props {
+  tags: string[];
+  activeTag: string | null;
+  basePath: string;
+  category: string;
+}
+const { tags, activeTag, basePath, category } = Astro.props;
+
+const tagHref = (tag: string | null) => {
+  const params = new URLSearchParams();
+  if (category && category !== 'lolita') params.set('category', category);
+  if (tag) params.set('tag', tag);
+  const qs = params.toString();
+  return qs ? `${basePath}?${qs}` : basePath;
+};
+---
+
+{tags.length > 0 && (
+  <div class="flex gap-2 mb-6 overflow-x-auto pb-2 items-center">
+    <a
+      href={tagHref(null)}
+      class={`px-3 py-1 text-xs whitespace-nowrap transition-all duration-300 ${
+        !activeTag ? 'font-semibold' : ''
+      }`}
+      style={!activeTag
+        ? 'background-color: var(--nav-active-bg); color: var(--nav-active-text); border-radius: var(--card-radius);'
+        : 'background-color: transparent; color: var(--text-muted); border: 1px solid var(--card-border); border-radius: var(--card-radius);'
+      }
+    >
+      全部
+    </a>
+    {tags.map((tag) => {
+      const isActive = activeTag === tag;
+      return (
+        <a
+          href={tagHref(tag)}
+          class={`px-3 py-1 text-xs whitespace-nowrap transition-all duration-300 ${
+            isActive ? 'font-semibold' : ''
+          }`}
+          style={isActive
+            ? 'background-color: var(--nav-active-bg); color: var(--nav-active-text); border-radius: var(--card-radius);'
+            : 'background-color: transparent; color: var(--text); border: 1px solid var(--card-border); border-radius: var(--card-radius);'
+          }
+        >
+          {tag}
+        </a>
+      );
+    })}
+  </div>
+)}
