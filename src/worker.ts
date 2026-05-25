@@ -1,5 +1,5 @@
 import { handle } from '@astrojs/cloudflare/handler';
-import { handleUpload, handleOptions, handleDelete } from './api/upload';
+import { handleUpload, handleOptions, handleDelete, handleUpdate } from './api/upload';
 import type { Env } from './types/env';
 
 export default {
@@ -22,6 +22,9 @@ export default {
           } catch { /* ignore warmup errors */ }
         }
         return response;
+      }
+      if (request.method === 'PATCH') {
+        return handleUpdate(request, env);
       }
       if (request.method === 'DELETE') {
         return handleDelete(request, env);

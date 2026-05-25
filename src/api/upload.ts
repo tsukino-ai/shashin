@@ -1,5 +1,19 @@
 import type { R2Bucket } from '@cloudflare/workers-types';
 import { parseImageDimensions } from '../lib/parseImageDimensions';
+import {
+  PHOTO_PREFIX,
+  buildPhotoKey,
+  formatSize,
+  getCategoryFromPhotoKey,
+  getFilenameFromPhotoKey,
+  getPhotoThumbUrl,
+  getPhotoUrl,
+  getTagsDisplay,
+  getUploadedDate,
+  normalizeCategory,
+  normalizeTags,
+  serializeTags,
+} from '../lib/photoMetadata';
 
 interface UploadEnv {
   GALARY_BUCKET: R2Bucket;
@@ -9,7 +23,7 @@ interface UploadEnv {
 function getCorsHeaders(env: UploadEnv): Record<string, string> {
   return {
     'Access-Control-Allow-Origin': env.CORS_ORIGIN || 'https://shashin.tsukino.dev',
-    'Access-Control-Allow-Methods': 'POST, DELETE, OPTIONS',
+    'Access-Control-Allow-Methods': 'POST, PATCH, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Upload-Metadata',
   };
 }
@@ -106,6 +120,98 @@ export async function handleDelete(request: Request, env: UploadEnv): Promise<Re
   } catch (err: unknown) {
     console.error('Delete error:', err);
     const message = err instanceof Error ? err.message : 'Delete failed';
+    return jsonResponse({ success: false, error: message }, 500, corsHeaders);
+  }
+}
+
+export async function handleUpdate(request: Request, env: UploadEnv): Promise<Response> {
+  const corsHeaders = getCorsHeaders(env);
+  try {
+    const url = new URL(request.url);
+    const key = url.searchParams.get('key');
+    if (!key) {
+      return jsonResponse({ success: false, error: 'Missing key parameter' }, 400, corsHeaders);
+    }
+    if (!key.startsWith(PHOTO_PREFIX)) {
+      return jsonResponse({ success: false, error: 'Invalid photo key' }, 400, corsHeaders);
+    }
+
+    const contentType = request.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      return jsonResponse({ success: false, error: 'Expected application/json' }, 400, corsHeaders);
+    }
+
+    const payload = await request.json().catch(() => null) as { category?: unknown; tags?: unknown } | null;
+    if (!payload || typeof payload !== 'object') {
+      return jsonResponse({ success: false, error: 'Invalid JSON body' }, 400, corsHeaders);
+    }
+
+    const object = await env.GALARY_BUCKET.get(key);
+    if (!object) {
+      return jsonResponse({ success: false, error: 'Photo not found' }, 404, corsHeaders);
+    }
+
+    const filename = getFilenameFromPhotoKey(key);
+    if (!filename) {
+      return jsonResponse({ success: false, error: 'Invalid photo filename' }, 400, corsHeaders);
+    }
+
+    const category = 'category' in payload ? normalizeCategory(payload.category) : getCategoryFromPhotoKey(key);
+    const tags = 'tags' in payload ? normalizeTags(payload.tags) : normalizeTags(object.customMetadata?.tags);
+    const tagsValue = 'tags' in payload ? serializeTags(payload.tags) : serializeTags(object.customMetadata?.tags);
+    const newKey = buildPhotoKey(category, filename);
+
+    if (newKey !== key) {
+      const existing = await env.GALARY_BUCKET.head(newKey);
+      if (existing) {
+        return jsonResponse({ success: false, error: 'Target key already exists' }, 409, corsHeaders);
+      }
+    }
+
+    const uploaded = getUploadedDate(object.customMetadata, object.uploaded);
+    const uploadedIso = uploaded ? uploaded.toISOString() : new Date().toISOString();
+    const customMetadata = {
+      ...(object.customMetadata || {}),
+      uploadedAt: object.customMetadata?.uploadedAt || uploadedIso,
+      tags: tagsValue,
+    };
+
+    await env.GALARY_BUCKET.put(newKey, object.body, {
+      httpMetadata: object.httpMetadata,
+      customMetadata,
+    });
+
+    if (newKey !== key) {
+      await env.GALARY_BUCKET.delete(key);
+    }
+
+    const updatedUploaded = getUploadedDate(customMetadata, object.uploaded);
+    const date = updatedUploaded ? updatedUploaded.toISOString() : '';
+    return jsonResponse(
+      {
+        success: true,
+        oldKey: key,
+        key: newKey,
+        photo: {
+          key: newKey,
+          src: getPhotoUrl(newKey),
+          thumb: getPhotoThumbUrl(newKey),
+          category: getCategoryFromPhotoKey(newKey),
+          tags,
+          tagsDisplay: getTagsDisplay(tags),
+          date,
+          dateDisplay: updatedUploaded ? updatedUploaded.toLocaleDateString('zh-CN') : '',
+          size: object.size,
+          sizeDisplay: formatSize(object.size),
+          visibility: 'public',
+        },
+      },
+      200,
+      corsHeaders
+    );
+  } catch (err: unknown) {
+    console.error('Update error:', err);
+    const message = err instanceof Error ? err.message : 'Update failed';
     return jsonResponse({ success: false, error: message }, 500, corsHeaders);
   }
 }
