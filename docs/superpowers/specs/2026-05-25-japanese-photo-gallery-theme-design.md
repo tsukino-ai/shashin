@@ -26,10 +26,12 @@ Layout.astro (统一骨架)
 │   └── 四个分类标签：Lolita | JK | 地雷系 | 清楚系
 │   └── 当前分类高亮，其他弱化
 ├── 主内容区
+│   └── 标签筛选栏 (TagFilter)
+│       └── 展示当前分类下所有可用标签，支持点击筛选
 │   └── 月度折叠分组（保留现有逻辑）
 │   └── PhotoGrid 瀑布流
 │       └── 照片卡片（根据主题变体渲染）
-│           └── 图片 + 可选日期标签 + hover 效果
+│           └── 图片 + 标签展示 + 可选日期标签 + hover 效果
 ├── PhotoSwipe 灯箱（保留现有功能）
 └── 删除按钮（保留现有功能）
 ```
@@ -38,6 +40,7 @@ Layout.astro (统一骨架)
 
 - 移除首页「精选」入口，根路由 `/` 默认展示 Lolita 分类内容
 - 其他分类通过顶部导航切换（URL 参数 `?category=jk` 等）
+- 标签筛选通过 URL 参数 `?tag=xxx` 或 `?tags=xxx,yyy` 实现
 - `/private/` 路由保持，同样应用主题系统
 - `/upload` 和 `/manage` 不参与主题切换，保持简洁实用风格
 
@@ -217,8 +220,20 @@ body::after {
 - 边框：`1px solid var(--card-border)`（地雷系等需要明显边框的主题）
 - Lolita 卡片底部增加日期水印（✦ YYYY.MM.DD ✦）
 - JK 卡片增加小标签区域（樱花 emoji + 分类名）
+- **照片标签展示**：hover 时或卡片底部显示该照片的标签（小 pill 样式）
 - hover 效果：轻微放大(scale 1.02) + 阴影加深
 - Lolita 卡片可添加轻微随机旋转（-2° ~ 2°），通过 inline style 或 CSS nth-child 实现
+
+### TagFilter（标签筛选栏）
+
+在 CategoryNav 下方、照片网格上方展示：
+- 展示当前分类下所有照片的标签集合（去重后排序）
+- 标签以 pill/badge 样式横向排列，支持溢出滚动
+- 当前选中的标签：填充主色背景 + 白色文字
+- 未选中的标签：半透明边框 + 主色文字
+- 点击标签切换筛选状态，URL 参数同步更新（`?tag=xxx`）
+- 支持「全部」选项，清除所有标签筛选
+- 标签展示样式随主题变化：Lolita 衬线体小标签、地雷系霓虹边框等
 
 ### Layout（页面骨架）
 
@@ -267,6 +282,27 @@ body::after {
 
 **注意**：实际分类名称可能与 theme key 不完全一致，需要建立映射表或约定分类目录命名。
 
+### 标签系统数据流
+
+1. **存储**：标签以逗号分隔的字符串存储在 R2 对象的 `customMetadata.tags` 中
+2. **读取**：列表照片时解析 `tags` 字段为字符串数组
+3. **聚合**：遍历当前分类下所有照片，提取并去重所有标签，生成标签云
+4. **筛选**：根据 URL 的 `tag` 参数过滤照片数组，只展示包含该标签的照片
+5. **多标签（未来）**：当前先实现单标签筛选，URL 参数为 `?tag=xxx`，后续可扩展为 `?tags=xxx,yyy`
+
+标签数据示例：
+```js
+// R2 customMetadata
+customMetadata: {
+  width: '2000',
+  height: '3000',
+  tags: '甜系,室内,粉白,bbd'  // 逗号分隔
+}
+
+// 解析后
+photo.tags = ['甜系', '室内', '粉白', 'bbd'];
+```
+
 ### 文件变更清单
 
 | 文件 | 操作 | 说明 |
@@ -276,7 +312,8 @@ body::after {
 | `src/layouts/Layout.astro` | 修改 | 添加 data-theme、Google Fonts、背景纹理层 |
 | `src/components/CategoryNav.astro` | 修改 | 重新设计为风格化标签导航 |
 | `src/components/PhotoGrid.astro` | 修改 | 卡片样式改为 CSS 变量驱动，添加主题化装饰 |
-| `src/components/GalleryPage.astro` | 修改 | 移除精选逻辑，默认指向 Lolita，添加 theme 映射 |
+| `src/components/GalleryPage.astro` | 修改 | 移除精选逻辑，默认指向 Lolita，添加 theme 映射和标签聚合/筛选逻辑 |
+| `src/components/TagFilter.astro` | 新增 | 标签筛选栏组件 |
 | `src/pages/index.astro` | 修改 | 默认加载 Lolita 内容 |
 
 ## 交互与动画
@@ -293,9 +330,11 @@ body::after {
 ## 边界情况
 
 1. **分类名称不匹配**：如果 R2 bucket 中的分类目录名与 theme key 不完全一致，需要建立映射表
-2. **字体加载失败**：设置系统字体回退栈：`font-family: 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif`
-3. **移动端适配**：导航标签保持横向滚动，卡片瀑布流在移动端保持 2 列
-4. **无照片状态**：保留现有「暂无照片」提示，样式适配当前主题
+2. **无标签照片**：标签筛选栏仍正常展示，只是该照片不会出现在任何标签筛选结果中
+3. **标签中文编码**：URL 参数中的中文标签需要 `encodeURIComponent` / `decodeURIComponent` 处理
+4. **字体加载失败**：设置系统字体回退栈：`font-family: 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif`
+5. **移动端适配**：导航标签和标签筛选栏保持横向滚动，卡片瀑布流在移动端保持 2 列
+6. **无照片状态**：保留现有「暂无照片」提示，样式适配当前主题
 
 ## 未来扩展
 

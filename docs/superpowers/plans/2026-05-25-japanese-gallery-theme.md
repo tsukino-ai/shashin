@@ -507,12 +507,82 @@ git commit -m "feat: redesign PhotoGrid with themed card decorations"
 
 ---
 
-## Task 6: 改造 GalleryPage 添加主题映射
+## Task 6: 创建 TagFilter 标签筛选组件
+
+**Files:**
+- Create: `src/components/TagFilter.astro`
+
+- [ ] **Step 1: 创建 TagFilter 组件**
+
+```astro
+---
+interface Props {
+  tags: string[];
+  activeTag: string | null;
+  basePath: string;
+  category: string;
+}
+const { tags, activeTag, basePath, category } = Astro.props;
+
+const tagHref = (tag: string | null) => {
+  const params = new URLSearchParams();
+  if (category && category !== 'lolita') params.set('category', category);
+  if (tag) params.set('tag', tag);
+  const qs = params.toString();
+  return qs ? `${basePath}?${qs}` : basePath;
+};
+---
+
+{tags.length > 0 && (
+  <div class="flex gap-2 mb-6 overflow-x-auto pb-2 items-center">
+    <a
+      href={tagHref(null)}
+      class={`px-3 py-1 text-xs whitespace-nowrap transition-all duration-300 ${
+        !activeTag ? 'font-semibold' : ''
+      }`}
+      style={!activeTag
+        ? 'background-color: var(--nav-active-bg); color: var(--nav-active-text); border-radius: var(--card-radius);'
+        : 'background-color: transparent; color: var(--text-muted); border: 1px solid var(--card-border); border-radius: var(--card-radius);'
+      }
+    >
+      全部
+    </a>
+    {tags.map((tag) => {
+      const isActive = activeTag === tag;
+      return (
+        <a
+          href={tagHref(tag)}
+          class={`px-3 py-1 text-xs whitespace-nowrap transition-all duration-300 ${
+            isActive ? 'font-semibold' : ''
+          }`}
+          style={isActive
+            ? 'background-color: var(--nav-active-bg); color: var(--nav-active-text); border-radius: var(--card-radius);'
+            : 'background-color: transparent; color: var(--text); border: 1px solid var(--card-border); border-radius: var(--card-radius);'
+          }
+        >
+          {tag}
+        </a>
+      );
+    })}
+  </div>
+)}
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/components/TagFilter.astro
+git commit -m "feat: add TagFilter component for tag-based photo filtering"
+```
+
+---
+
+## Task 7: 改造 GalleryPage 添加主题映射和标签系统
 
 **Files:**
 - Modify: `src/components/GalleryPage.astro`
 
-- [ ] **Step 1: 修改 GalleryPage，添加分类到主题的映射，默认 Lolita**
+- [ ] **Step 1: 修改 GalleryPage，添加分类到主题的映射、标签聚合与筛选，默认 Lolita**
 
 ```astro
 ---
@@ -529,6 +599,7 @@ export interface Props {
 
 const { title, heading, prefix } = Astro.props;
 const category = Astro.url.searchParams.get('category') || 'lolita';
+const activeTag = Astro.url.searchParams.get('tag');
 const authEmail = Astro.request.headers.get('cf-access-authenticated-user-email')
   || Astro.request.headers.get('CF-Access-Authenticated-User-Email');
 const isAuthenticated = !!authEmail;
@@ -580,6 +651,7 @@ try {
         h: parseInt(obj.customMetadata?.height || '3000', 10),
         key: obj.key,
         category: cat,
+        tags: obj.customMetadata?.tags ? String(obj.customMetadata.tags).split(',').map((t: string) => t.trim()).filter(Boolean) : [],
         date: uploaded ? uploaded.toLocaleDateString('zh-CN') : '',
         yearMonth: uploaded ? `${uploaded.getFullYear()}-${String(uploaded.getMonth() + 1).padStart(2, '0')}` : '',
       };
@@ -591,9 +663,21 @@ try {
   error = e?.message || String(e);
 }
 
-let groupedPhotos: Record<string, typeof photos> = {};
+// Filter photos by active tag
+const filteredPhotos = activeTag
+  ? photos.filter((p) => p.tags.includes(activeTag))
+  : photos;
+
+// Aggregate all tags in current category
+const allTagsSet = new Set<string>();
+photos.forEach((p) => {
+  p.tags.forEach((t: string) => allTagsSet.add(t));
+});
+const allTags = Array.from(allTagsSet).sort();
+
+let groupedPhotos: Record<string, typeof filteredPhotos> = {};
 if (category === 'all') {
-  photos.forEach((p) => {
+  filteredPhotos.forEach((p: any) => {
     const ym = p.yearMonth || '未知时间';
     if (!groupedPhotos[ym]) groupedPhotos[ym] = [];
     groupedPhotos[ym].push(p);
@@ -607,6 +691,7 @@ const displayHeading = category === 'lolita' ? 'Lolita 写真' : heading;
 <Layout title={title} theme={theme}>
   <h1 class="text-3xl font-light mb-4" style="font-family: var(--font-heading); color: var(--text);">{displayHeading}</h1>
   <CategoryNav categories={categories} active={category} basePath={Astro.url.pathname} />
+  <TagFilter tags={allTags} activeTag={activeTag} basePath={Astro.url.pathname} category={category} />
   {error && <p class="text-center py-8" style="color: #ef4444;">{error}</p>}
 
   {category === 'all' ? (
@@ -623,7 +708,7 @@ const displayHeading = category === 'lolita' ? 'Lolita 写真' : heading;
       ))}
     </div>
   ) : (
-    <PhotoGrid photos={photos} isAuthenticated={isAuthenticated} />
+    <PhotoGrid photos={filteredPhotos} isAuthenticated={isAuthenticated} />
   )}
 </Layout>
 ```
@@ -631,13 +716,49 @@ const displayHeading = category === 'lolita' ? 'Lolita 写真' : heading;
 - [ ] **Step 2: Commit**
 
 ```bash
-git add src/components/GalleryPage.astro
-git commit -m "feat: add category-to-theme mapping and default to Lolita"
+git add src/components/GalleryPage.astro src/components/TagFilter.astro
+git commit -m "feat: add theme mapping, tag aggregation and filtering"
 ```
 
 ---
 
-## Task 7: 修改首页默认指向 Lolita
+## Task 8: 改造 PhotoGrid 添加标签展示
+
+**Files:**
+- Modify: `src/components/PhotoGrid.astro`
+
+- [ ] **Step 1: 修改 PhotoGrid，为照片卡片添加标签 pills 展示**
+
+在 `PhotoGrid.astro` 中，找到 `masonry-item` div 的关闭标签之前，添加标签展示区域（在所有主题的照片卡片上都展示标签）：
+
+在 `</div>` (masonry-item 的关闭标签) 之前插入：
+
+```astro
+          {/* Tags display */}
+          {photo.tags && photo.tags.length > 0 && (
+            <div class="flex flex-wrap gap-1 px-3 pb-3 pt-1">
+              {photo.tags.map((tag: string) => (
+                <span
+                  class="text-[10px] px-2 py-0.5"
+                  style="background-color: var(--nav-inactive-bg); color: var(--nav-inactive-text); border-radius: calc(var(--card-radius) / 2);"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/components/PhotoGrid.astro
+git commit -m "feat: add tag pills display on photo cards"
+```
+
+---
+
+## Task 9: 修改首页默认指向 Lolita
 
 **Files:**
 - Modify: `src/pages/index.astro`
@@ -674,8 +795,10 @@ git commit -m "feat: set homepage default to Lolita theme"
 | 背景纹理层 | Task 1 (CSS) + Task 3 (HTML) |
 | 风格化导航标签 | Task 4 |
 | 主题化照片卡片 | Task 5 |
-| 分类→主题映射 | Task 6 |
-| 默认 Lolita 首页 | Task 6 + Task 7 |
+| 分类→主题映射 | Task 7 |
+| 标签聚合与筛选 | Task 6 + Task 7 |
+| 标签展示 (TagFilter + 卡片 pills) | Task 6 + Task 8 |
+| 默认 Lolita 首页 | Task 7 + Task 9 |
 | Lolita 拍立得边框+日期 | Task 5 |
 | 地雷系霓虹发光 | Task 1 (shadow) + Task 5 (border) |
 | 清楚系大圆角极简 | Task 1 |
@@ -711,4 +834,9 @@ git commit -m "feat: set homepage default to Lolita theme"
 5. **背景纹理**：肉眼可见很淡的纹理（3%-5% 透明度）
 6. **删除功能**：保留现有删除按钮和确认逻辑
 7. **PhotoSwipe**：灯箱功能正常
-8. **移动端**：导航可横向滚动，瀑布流为 2 列
+8. **标签系统**：
+   - 标签筛选栏展示当前分类所有标签
+   - 点击标签筛选照片，URL 参数更新
+   - 照片卡片底部展示标签 pills
+   - 「全部」按钮清除筛选
+9. **移动端**：导航和标签筛选栏可横向滚动，瀑布流为 2 列
