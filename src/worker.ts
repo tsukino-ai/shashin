@@ -24,11 +24,24 @@ export default {
       if (!key) {
         return new Response('Missing key', { status: 400 });
       }
-      const imageUrl = `https://cdn.tsukino.dev/${key}`;
-      const response = await fetch(imageUrl, {
-        cf: { image: { width, quality: 80, fit: 'scale-down' } }
+
+      // Try Cloudflare Image Resizing URL format first
+      const resizingUrl = `https://cdn.tsukino.dev/cdn-cgi/image/w=${width},quality=80,fit=scale-down/${key}`;
+      const resized = await fetch(resizingUrl, { cf: { cacheEverything: true } });
+      if (resized.ok && resized.headers.get('content-type')?.startsWith('image/')) {
+        return resized;
+      }
+
+      // Fallback: return original image from R2
+      const originalUrl = `https://cdn.tsukino.dev/${key}`;
+      const original = await fetch(originalUrl);
+      return new Response(original.body, {
+        status: original.status,
+        headers: {
+          'Content-Type': original.headers.get('content-type') || 'image/jpeg',
+          'Cache-Control': 'public, max-age=86400',
+        },
       });
-      return response;
     }
 
     return handle(request, env, ctx);

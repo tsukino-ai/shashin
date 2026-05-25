@@ -13,7 +13,7 @@ const bucket = env.GALARY_BUCKET;
 let photos: any[] = [];
 
 if (bucket) {
-  const prefixes = ['public/', 'private/'];
+  const prefixes = ['photos/'];
   for (const prefix of prefixes) {
     const listed = await bucket.list({ prefix });
     for (const obj of listed.objects || []) {
@@ -31,7 +31,7 @@ if (bucket) {
         dateDisplay: uploaded ? uploaded.toLocaleDateString('zh-CN') : '',
         size: obj.size,
         sizeDisplay: formatSize(obj.size),
-        visibility: prefix === 'private/' ? 'private' : 'public',
+        visibility: 'public',
       });
     }
   }

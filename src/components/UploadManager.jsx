@@ -170,7 +170,7 @@ export default function UploadManager() {
         }`}
       >
         <p className="text-lg">拖拽图片到这里，或点击选择</p>
-        <p className="text-sm text-neutral-500 mt-2">支持 JPG, PNG, WebP（单张最大 25MB）</p>
+        <p className="text-sm text-neutral-500 mt-2">支持 JPG, PNG, WebP（单张最大 100MB）</p>
         <input
           ref={inputRef}
           type="file"

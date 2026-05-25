@@ -41,9 +41,9 @@ export async function handleUpload(request: Request, env: UploadEnv): Promise<Re
       );
     }
 
-    const maxSize = 25 * 1024 * 1024;
+    const maxSize = 100 * 1024 * 1024;
     if (file.size > maxSize) {
-      return jsonResponse({ success: false, error: 'File too large (max 25MB)' }, 413);
+      return jsonResponse({ success: false, error: 'File too large (max 100MB)' }, 413);
     }
 
     const timestamp = Date.now();
