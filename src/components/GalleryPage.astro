@@ -6,6 +6,7 @@ import CategoryNav from './CategoryNav.astro';
 import TagFilter from './TagFilter.astro';
 import { categoryToTheme } from '../lib/categoryMap';
 import { getPhotoThumbUrl, getPhotoUrl, getUploadedDate, normalizeTags } from '../lib/photoMetadata';
+import { listAllObjects } from '../lib/r2Pagination';
 
 export interface Props {
   title: string;
@@ -29,8 +30,7 @@ let error: string | null = null;
 try {
   const bucket = env.GALARY_BUCKET;
   if (bucket) {
-    const allListed = await bucket.list({ prefix });
-    const allObjects = allListed.objects || [];
+    const allObjects = await listAllObjects(bucket, { prefix });
 
     const catSet = new Set<string>();
     allObjects.forEach((obj) => {
@@ -43,8 +43,8 @@ try {
     categories = Array.from(catSet).sort();
 
     const targetPrefix = category === 'all' ? prefix : `${prefix}${category}/`;
-    const listed = await bucket.list({ prefix: targetPrefix, include: ['customMetadata', 'httpMetadata'] });
-    photos = (listed.objects || []).map((obj) => {
+    const photoObjects = await listAllObjects(bucket, { prefix: targetPrefix, include: ['customMetadata', 'httpMetadata'] });
+    photos = photoObjects.map((obj) => {
       const publicUrl = getPhotoUrl(obj.key);
       const relativeKey = obj.key.slice(prefix.length);
       const parts = relativeKey.split('/');

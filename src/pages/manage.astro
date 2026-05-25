@@ -11,6 +11,7 @@ import {
   getUploadedDate,
   normalizeTags,
 } from '../lib/photoMetadata';
+import { listAllObjects } from '../lib/r2Pagination';
 
 const bucket = env.GALARY_BUCKET;
 let photos: any[] = [];
@@ -18,8 +19,8 @@ let photos: any[] = [];
 if (bucket) {
   const prefixes = ['photos/'];
   for (const prefix of prefixes) {
-    const listed = await bucket.list({ prefix, include: ['customMetadata', 'httpMetadata'] });
-    for (const obj of listed.objects || []) {
+    const objects = await listAllObjects(bucket, { prefix, include: ['customMetadata', 'httpMetadata'] });
+    for (const obj of objects) {
       const tags = normalizeTags(obj.customMetadata?.tags || '');
       const uploaded = getUploadedDate(obj.customMetadata, obj.uploaded);
       photos.push({

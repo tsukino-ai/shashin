@@ -181,34 +181,40 @@ export async function handleUpdate(request: Request, env: UploadEnv): Promise<Re
       customMetadata,
     });
 
+    let deleteOldFailed = false;
     if (newKey !== key) {
-      await env.GALARY_BUCKET.delete(key);
+      try {
+        await env.GALARY_BUCKET.delete(key);
+      } catch (deleteErr: unknown) {
+        console.error('Delete old key failed:', deleteErr);
+        deleteOldFailed = true;
+      }
     }
 
     const updatedUploaded = getUploadedDate(customMetadata, object.uploaded);
     const date = updatedUploaded ? updatedUploaded.toISOString() : '';
-    return jsonResponse(
-      {
-        success: true,
-        oldKey: key,
+    const responseBody: Record<string, unknown> = {
+      success: true,
+      oldKey: key,
+      key: newKey,
+      photo: {
         key: newKey,
-        photo: {
-          key: newKey,
-          src: getPhotoUrl(newKey),
-          thumb: getPhotoThumbUrl(newKey),
-          category: getCategoryFromPhotoKey(newKey),
-          tags,
-          tagsDisplay: getTagsDisplay(tags),
-          date,
-          dateDisplay: updatedUploaded ? updatedUploaded.toLocaleDateString('zh-CN') : '',
-          size: object.size,
-          sizeDisplay: formatSize(object.size),
-          visibility: 'public',
-        },
+        src: getPhotoUrl(newKey),
+        thumb: getPhotoThumbUrl(newKey),
+        category: getCategoryFromPhotoKey(newKey),
+        tags,
+        tagsDisplay: getTagsDisplay(tags),
+        date,
+        dateDisplay: updatedUploaded ? updatedUploaded.toLocaleDateString('zh-CN') : '',
+        size: object.size,
+        sizeDisplay: formatSize(object.size),
+        visibility: 'public',
       },
-      200,
-      corsHeaders
-    );
+    };
+    if (deleteOldFailed) {
+      responseBody.warning = 'Old key cleanup failed; photo was copied to new key successfully';
+    }
+    return jsonResponse(responseBody, 200, corsHeaders);
   } catch (err: unknown) {
     console.error('Update error:', err);
     const message = err instanceof Error ? err.message : 'Update failed';
