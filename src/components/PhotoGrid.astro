@@ -10,6 +10,8 @@ interface Photo {
   date?: string;
   category?: string;
   key?: string;
+  tags?: string[];
+  theme?: string;
 }
 interface Props {
   photos: Photo[];
@@ -19,46 +21,82 @@ const { photos, isAuthenticated = false } = Astro.props;
 ---
 
 {photos.length === 0 ? (
-  <p class="text-neutral-500 text-center py-20">暂无照片</p>
+  <p class="text-center py-20" style="color: var(--text-muted);">暂无照片</p>
 ) : (
   <div class="masonry" id="gallery">
-    {photos.map((photo, i) => (
-      <div class="masonry-item group relative block mb-4 overflow-hidden rounded-lg bg-neutral-800">
-        <a
-          href={photo.src}
-          data-pswp-width={photo.w}
-          data-pswp-height={photo.h}
-          data-caption={`${photo.category || ''}${photo.category && photo.date ? ' · ' : ''}${photo.date || ''}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="block"
+    {photos.map((photo, i) => {
+      const rotation = ((i * 7) % 5 - 2); // -2 to +2 degrees
+      return (
+        <div
+          class="masonry-item group relative block mb-4 overflow-hidden"
+          style={`background-color: var(--card-bg); border-radius: var(--card-radius); box-shadow: var(--card-shadow); ${photo.theme === 'lolita' ? `transform: rotate(${rotation}deg);` : ''}`}
         >
-          <img
-            src={photo.thumb}
-            alt={photo.alt || `照片 ${i + 1}`}
-            loading="lazy"
-            width={photo.w}
-            height={photo.h}
-            class="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-[1.03] opacity-0"
-            onload="this.classList.remove('opacity-0'); this.classList.add('opacity-100')"
-          />
-        </a>
-        {photo.key && (
-          <button
-            type="button"
-            data-key={photo.key}
-            class="delete-btn absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-full bg-black/50 text-white/80 opacity-0 transition-opacity duration-300 group-hover:opacity-100 hover:bg-red-600 hover:text-white"
-            title="删除"
+          <a
+            href={photo.src}
+            data-pswp-width={photo.w}
+            data-pswp-height={photo.h}
+            data-caption={`${photo.category || ''}${photo.category && photo.date ? ' · ' : ''}${photo.date || ''}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="block"
           >
-            ×
-          </button>
-        )}
-        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none">
-          {photo.date && <p class="text-xs text-white/90">{photo.date}</p>}
-          {photo.category && <p class="text-[10px] text-white/60">{photo.category}</p>}
+            <img
+              src={photo.thumb}
+              alt={photo.alt || `照片 ${i + 1}`}
+              loading="lazy"
+              width={photo.w}
+              height={photo.h}
+              class="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-[1.02] opacity-0"
+              onload="this.classList.remove('opacity-0'); this.classList.add('opacity-100')"
+              style="border-radius: calc(var(--card-radius) - 2px);"
+            />
+          </a>
+          {photo.key && (
+            <button
+              type="button"
+              data-key={photo.key}
+              class="delete-btn absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-full bg-black/50 text-white/80 opacity-0 transition-opacity duration-300 group-hover:opacity-100 hover:bg-red-600 hover:text-white"
+              title="删除"
+            >
+              ×
+            </button>
+          )}
+          {/* Lolita date watermark */}
+          {photo.date && photo.theme === 'lolita' && (
+            <div class="text-center py-2" style="font-family: var(--font-heading); color: var(--primary); font-size: 11px;">
+              ✦ {photo.date} ✦
+            </div>
+          )}
+          {/* JK tag */}
+          {photo.theme === 'jk' && (
+            <div class="flex justify-between items-center px-3 py-2">
+              <span style="font-size: 10px; color: var(--primary); background: var(--bg); padding: 2px 8px; border-radius: 10px;">🌸 {photo.category}</span>
+              {photo.date && <span style="font-size: 10px; color: var(--text-muted);">{photo.date}</span>}
+            </div>
+          )}
+          {/* Tags display - all themes */}
+          {photo.tags && photo.tags.length > 0 && (
+            <div class="flex flex-wrap gap-1 px-3 pb-3 pt-1">
+              {photo.tags.map((tag: string) => (
+                <span
+                  class="text-[10px] px-2 py-0.5"
+                  style="background-color: var(--nav-inactive-bg); color: var(--nav-inactive-text); border-radius: calc(var(--card-radius) / 2);"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+          {/* Default overlay for jirai/seiso hover */}
+          {(photo.theme === 'jirai' || photo.theme === 'seiso') && (
+            <div class="absolute inset-x-0 bottom-0 p-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" style="background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);">
+              {photo.date && <p class="text-xs text-white/90">{photo.date}</p>}
+              {photo.category && <p class="text-[10px] text-white/60">{photo.category}</p>}
+            </div>
+          )}
         </div>
-      </div>
-    ))}
+      );
+    })}
   </div>
 )}
 
@@ -94,6 +132,18 @@ const { photos, isAuthenticated = false } = Astro.props;
   }
   .masonry-item {
     break-inside: avoid;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  .masonry-item:hover {
+    box-shadow: var(--card-shadow), 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
+  /* Jirai theme card border glow */
+  [data-theme="jirai"] .masonry-item {
+    border: 1px solid var(--card-border);
+  }
+  /* Jirai theme delete button higher contrast */
+  [data-theme="jirai"] .delete-btn {
+    background-color: rgba(255, 105, 180, 0.4);
   }
   @media (min-width: 768px) {
     .masonry { columns: 3; }
