@@ -3,25 +3,54 @@ import '../styles/global.css';
 
 interface Props {
   title: string;
+  theme?: string;
 }
-const { title } = Astro.props;
+const { title, theme = 'lolita' } = Astro.props;
 ---
+
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme={theme}>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{title}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600&family=Zen+Kaku+Gothic+New:wght@300;400;700&family=Zen+Maru+Gothic:wght@400;700&display=swap"
+    rel="stylesheet"
+  />
 </head>
-<body class="bg-neutral-900 text-white min-h-screen">
-  <nav class="px-6 py-4 border-b border-neutral-800 flex gap-6">
-    <a href="/" class="hover:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">精选</a>
-    <a href="/private" class="hover:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">写真集</a>
-    <a href="/upload" class="hover:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">上传</a>
-    <a href="/manage" class="hover:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">管理</a>
+<body class="min-h-screen" style="font-family: var(--font-body); color: var(--text); background-color: var(--bg);">
+  <!-- Global navigation -->
+  <nav class="px-6 py-4" style="border-bottom: 1px solid var(--card-border);">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-6">
+        <a href="/" class="text-lg font-semibold" style="font-family: var(--font-heading); color: var(--primary);">Tsukino Gallery</a>
+        <div class="flex gap-4 text-sm">
+          <a href="/" class="transition-opacity hover:opacity-80" style="color: var(--text);">写真</a>
+          <a href="/upload" class="transition-opacity hover:opacity-80" style="color: var(--text-muted);">上传</a>
+          <a href="/manage" class="transition-opacity hover:opacity-80" style="color: var(--text-muted);">管理</a>
+        </div>
+      </div>
+    </div>
   </nav>
   <main class="max-w-7xl mx-auto px-6 py-8">
     <slot />
   </main>
 </body>
 </html>
+
+<style is:global>
+  body::before,
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+  }
+  body::before {
+    background-color: var(--bg);
+  }
+</style>
