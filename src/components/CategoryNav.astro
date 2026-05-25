@@ -5,21 +5,78 @@ interface Props {
   basePath: string;
 }
 const { categories, active, basePath } = Astro.props;
+
+// Map directory names to theme keys and display labels
+const categoryToTheme: Record<string, string> = {
+  lolita: 'lolita',
+  jk: 'jk',
+  jirai: 'jirai',
+  seiso: 'seiso',
+  '地雷系': 'jirai',
+  '清楚系': 'seiso',
+};
+
+const categoryToLabel: Record<string, string> = {
+  lolita: '🎀 Lolita',
+  jk: '🌸 JK',
+  jirai: '🖤💗 地雷系',
+  seiso: '🤍 清楚系',
+  '地雷系': '🖤💗 地雷系',
+  '清楚系': '🤍 清楚系',
+};
+
+function getLabel(cat: string): string {
+  return categoryToLabel[cat] || cat;
+}
+
+function getHref(cat: string): string {
+  return cat === 'lolita' ? basePath : `${basePath}?category=${encodeURIComponent(cat)}`;
+}
 ---
 
-<nav class="flex gap-2 mb-6 overflow-x-auto pb-2">
-  <a
-    href={basePath}
-    class={`px-3 py-1 rounded-full text-sm whitespace-nowrap transition ${active === 'all' ? 'bg-blue-600 text-white' : 'bg-neutral-800 text-neutral-400 hover:text-white'}`}
-  >
-    全部
-  </a>
-  {categories.map((cat) => (
-    <a
-      href={`${basePath}?category=${encodeURIComponent(cat)}`}
-      class={`px-3 py-1 rounded-full text-sm whitespace-nowrap transition ${active === cat ? 'bg-blue-600 text-white' : 'bg-neutral-800 text-neutral-400 hover:text-white'}`}
-    >
-      {cat}
-    </a>
-  ))}
+<nav class="flex gap-2 mb-6 overflow-x-auto pb-2" style="font-family: var(--font-heading);">
+  {categories.map((cat) => {
+    const isActive = active === cat;
+    return (
+      <a
+        href={getHref(cat)}
+        class={`px-4 py-2 text-sm whitespace-nowrap transition-all duration-300 ${
+          isActive ? 'nav-active' : 'nav-inactive'
+        }`}
+        style={isActive
+          ? 'background-color: var(--nav-active-bg); color: var(--nav-active-text);'
+          : 'background-color: var(--nav-inactive-bg); color: var(--nav-inactive-text);'
+        }
+      >
+        {getLabel(cat)}
+      </a>
+    );
+  })}
 </nav>
+
+<style>
+  .nav-active {
+    border-radius: var(--card-radius);
+    font-weight: 600;
+  }
+  .nav-inactive {
+    border-radius: var(--card-radius);
+    opacity: 0.8;
+  }
+  .nav-inactive:hover {
+    opacity: 1;
+    filter: brightness(1.1);
+  }
+  /* Theme-specific nav shapes */
+  [data-theme="lolita"] .nav-active,
+  [data-theme="lolita"] .nav-inactive {
+    border-radius: 20px 20px 0 0;
+  }
+  [data-theme="seiso"] .nav-active,
+  [data-theme="seiso"] .nav-inactive {
+    border-radius: 9999px;
+  }
+  [data-theme="jirai"] .nav-active {
+    box-shadow: 0 0 8px var(--primary);
+  }
+</style>
