@@ -68,11 +68,14 @@
       lightbox.pswp.options.easing = backEasing.in;
     });
 
-    // Fix aspect ratio: override declared dimensions with actual image dimensions
+    // Fix aspect ratio: when the actual image dimensions differ from declared data-pswp-width/height,
+    // update the slide's logical dimensions so PhotoSwipe can correctly fit the image to viewport.
+    // Do NOT touch slide.content.setDisplayedSize — that's PhotoSwipe's internal layout concern.
     lightbox.on('change', () => {
       const slide = lightbox.pswp.currSlide;
       if (!slide || !slide.content || !slide.content.element) return;
       const img = slide.content.element;
+
       const applyRealSize = () => {
         if (!img.naturalWidth || !img.naturalHeight) return;
         const realW = img.naturalWidth;
@@ -81,11 +84,6 @@
         if (slide.width !== realW || slide.height !== realH) {
           slide.width = realW;
           slide.height = realH;
-          slide.content.width = realW;
-          slide.content.height = realH;
-          if (slide.content.setDisplayedSize) {
-            slide.content.setDisplayedSize(realW, realH);
-          }
           if (slide.calculateSize) {
             slide.calculateSize();
           }
@@ -94,6 +92,7 @@
           }
         }
       };
+
       if (img.complete) {
         applyRealSize();
       } else {

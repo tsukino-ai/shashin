@@ -9,6 +9,25 @@ const CATEGORY_OPTIONS = [
   { value: 'seiso', label: '🤍 清楚系' },
 ];
 
+const CONCURRENCY = 2;
+
+/** Read image dimensions from a File without re-encoding */
+function getImageDimensions(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('无法读取图片尺寸'));
+    };
+    img.src = url;
+  });
+}
+
 export default function UploadManager() {
   const [files, setFiles] = useState([]);
   const [watermarkConfig, setWatermarkConfig] = useState(null);
@@ -57,41 +76,68 @@ export default function UploadManager() {
     setFiles((prev) => prev.map((f) => (f.id === id ? { ...f, tags } : f)));
   };
 
+  const updateFileStatus = (id, updates) => {
+    if (!mountedRef.current) return;
+    setFiles((prev) => prev.map((f) => (f.id === id ? { ...f, ...updates } : f)));
+  };
+
   const processAndUpload = async (item) => {
     if (!mountedRef.current) return;
 
-    // Update status to processing
-    setFiles((prev) => prev.map((f) => (f.id === item.id ? { ...f, status: 'processing' } : f)));
+    const config = watermarkConfig;
+    const useWatermark = config?.enabled && config?.content?.trim();
 
-    // Create Web Worker
-    const worker = new Worker('/image-worker.js');
+    let blob;
+    let width;
+    let height;
 
-    const result = await new Promise((resolve, reject) => {
-      worker.onmessage = (e) => {
-        if (e.data.success) {
-          resolve(e.data);
-        } else {
-          reject(new Error(e.data.error));
-        }
-      };
-      worker.onerror = reject;
-      worker.postMessage({ file: item.file, config: watermarkConfig });
-    });
+    if (useWatermark) {
+      // Route through Web Worker for watermark + re-encode
+      updateFileStatus(item.id, { status: 'processing' });
 
-    const blob = new Blob([result.arrayBuffer], { type: 'image/jpeg' });
+      const worker = new Worker('/image-worker.js');
+      let result;
+      try {
+        result = await new Promise((resolve, reject) => {
+          worker.onmessage = (e) => {
+            if (e.data.success) {
+              resolve(e.data);
+            } else {
+              reject(new Error(e.data.error));
+            }
+          };
+          worker.onerror = reject;
+          worker.postMessage({ file: item.file, config });
+        });
+      } finally {
+        worker.terminate();
+      }
 
-    worker.terminate();
+      blob = new Blob([result.arrayBuffer], { type: 'image/jpeg' });
+      width = result.width;
+      height = result.height;
+    } else {
+      // Direct upload: preserve original format and size
+      updateFileStatus(item.id, { status: 'processing' });
+      const dims = await getImageDimensions(item.file);
+      blob = item.file;
+      width = dims.width;
+      height = dims.height;
+    }
 
     if (!mountedRef.current) return;
 
     // Upload
-    setFiles((prev) => prev.map((f) => (f.id === item.id ? { ...f, status: 'uploading' } : f)));
+    updateFileStatus(item.id, { status: 'uploading' });
 
+    const filename = useWatermark
+      ? item.name.replace(/\.[^.]+$/, '.jpg')
+      : item.name;
     const formData = new FormData();
-    formData.append('file', blob, item.name.replace(/\.[^.]+$/, '.jpg'));
+    formData.append('file', blob, filename);
     formData.append('category', item.category || '');
-    formData.append('width', String(result.width || 2000));
-    formData.append('height', String(result.height || 3000));
+    formData.append('width', String(width || 2000));
+    formData.append('height', String(height || 3000));
     formData.append('tags', item.tags || '');
 
     const xhr = new XMLHttpRequest();
@@ -101,7 +147,7 @@ export default function UploadManager() {
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable && mountedRef.current) {
           const pct = Math.round((e.loaded / e.total) * 100);
-          setFiles((prev) => prev.map((f) => (f.id === item.id ? { ...f, progress: pct } : f)));
+          updateFileStatus(item.id, { progress: pct });
         }
       };
 
@@ -125,7 +171,7 @@ export default function UploadManager() {
     });
 
     if (mountedRef.current) {
-      setFiles((prev) => prev.map((f) => (f.id === item.id ? { ...f, status: 'done', progress: 100 } : f)));
+      updateFileStatus(item.id, { status: 'done', progress: 100 });
     }
   };
 
@@ -134,19 +180,28 @@ export default function UploadManager() {
     setIsUploading(true);
 
     const pending = files.filter((f) => f.status === 'pending');
-    for (const item of pending) {
-      try {
-        await processAndUpload(item);
-      } catch (err) {
-        if (mountedRef.current) {
-          setFiles((prev) =>
-            prev.map((f) => (f.id === item.id ? { ...f, status: 'error', error: err.message } : f))
-          );
+
+    // Promise pool: keep CONCURRENCY uploads in flight continuously
+    let index = 0;
+    async function worker() {
+      while (index < pending.length) {
+        const item = pending[index++];
+        try {
+          await processAndUpload(item);
+        } catch (err) {
+          console.error('Upload failed:', item.name, err);
+          if (mountedRef.current) {
+            updateFileStatus(item.id, { status: 'error', error: err?.message || 'Upload failed' });
+          }
         }
       }
     }
 
-    setIsUploading(false);
+    await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+
+    if (mountedRef.current) {
+      setIsUploading(false);
+    }
   };
 
   const formatSize = (bytes) => {
@@ -245,7 +300,7 @@ export default function UploadManager() {
                 </div>
                 <div className="text-xs text-neutral-500 mt-1">
                   {item.status === 'pending' && '等待处理'}
-                  {item.status === 'processing' && '正在打水印...'}
+                  {item.status === 'processing' && '正在处理...'}
                   {item.status === 'uploading' && `上传中 ${item.progress}%`}
                   {item.status === 'done' && '完成'}
                   {item.status === 'error' && `错误: ${item.error}`}
@@ -282,7 +337,9 @@ export default function UploadManager() {
             disabled={isUploading}
             className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg py-3 font-medium"
           >
-            开始上传 ({files.filter((f) => f.status === 'pending').length} 张待处理)
+            {isUploading
+              ? '上传中...'
+              : `开始上传 (${files.filter((f) => f.status === 'pending').length} 张待处理)`}
           </button>
         </div>
       )}

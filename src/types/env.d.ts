@@ -2,6 +2,7 @@
 
 interface Env {
   GALARY_BUCKET: R2Bucket;
+  CORS_ORIGIN?: string;
 }
 
 type Runtime = import('@astrojs/cloudflare').Runtime<Env>;

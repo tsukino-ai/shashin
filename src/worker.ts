@@ -27,7 +27,7 @@ export default {
         return handleDelete(request, env);
       }
       if (request.method === 'OPTIONS') {
-        return handleOptions();
+        return handleOptions(env);
       }
     }
 

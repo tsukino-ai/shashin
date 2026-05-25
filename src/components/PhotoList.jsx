@@ -1,4 +1,4 @@
-export default function PhotoList({ photos, selectedKeys, onToggleSelect }) {
+export default function PhotoList({ photos, selectedKeys, onToggleSelect, onSelectKeys, onDeselectKeys }) {
   const handleCopy = (src) => {
     navigator.clipboard.writeText(src);
   };
@@ -31,11 +31,9 @@ export default function PhotoList({ photos, selectedKeys, onToggleSelect }) {
                 checked={photos.length > 0 && photos.every((p) => selectedKeys.has(p.key))}
                 onChange={(e) => {
                   if (e.target.checked) {
-                    photos.forEach((p) => onToggleSelect(p.key));
+                    onSelectKeys(photos.map((p) => p.key));
                   } else {
-                    photos.forEach((p) => {
-                      if (selectedKeys.has(p.key)) onToggleSelect(p.key);
-                    });
+                    onDeselectKeys(photos.map((p) => p.key));
                   }
                 }}
                 className="rounded"

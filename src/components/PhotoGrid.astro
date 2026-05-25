@@ -26,6 +26,7 @@ const { photos, isAuthenticated = false } = Astro.props;
   <div class="masonry" id="gallery">
     {photos.map((photo, i) => {
       const rotation = ((i * 7) % 5 - 2); // -2 to +2 degrees
+      const isEager = i < 8; // Load first 8 images eagerly for faster LCP
       return (
         <div
           class="masonry-item group relative block mb-4 overflow-hidden"
@@ -43,12 +44,13 @@ const { photos, isAuthenticated = false } = Astro.props;
             <img
               src={photo.thumb}
               alt={photo.alt || `照片 ${i + 1}`}
-              loading="lazy"
+              loading={isEager ? "eager" : "lazy"}
               decoding="async"
               width={photo.w}
               height={photo.h}
-              class="w-full h-auto object-cover transition-opacity duration-500 transition-transform duration-500 group-hover:scale-[1.02] opacity-0"
-              onload="this.classList.remove('opacity-0'); this.classList.add('opacity-100')"
+              class="w-full h-auto object-cover transition duration-500 group-hover:scale-[1.02] opacity-0"
+              onload="this.classList.remove('opacity-0'); this.classList.add('opacity-100'); this.parentElement.classList.remove('img-placeholder')"
+              onerror="this.classList.remove('opacity-0'); this.classList.add('opacity-100'); this.parentElement.classList.remove('img-placeholder'); this.src=this.parentElement.href"
               style="border-radius: calc(var(--card-radius) - 2px);"
             />
           </a>

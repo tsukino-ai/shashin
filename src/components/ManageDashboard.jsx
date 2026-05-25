@@ -65,6 +65,22 @@ export default function ManageDashboard({ photos }) {
     setSelectedKeys(new Set());
   }, []);
 
+  const selectKeys = useCallback((keys) => {
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      keys.forEach((k) => next.add(k));
+      return next;
+    });
+  }, []);
+
+  const deselectKeys = useCallback((keys) => {
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      keys.forEach((k) => next.delete(k));
+      return next;
+    });
+  }, []);
+
   const handleBatchDelete = async () => {
     if (selectedKeys.size === 0) return;
     setIsDeleting(true);
@@ -221,7 +237,7 @@ export default function ManageDashboard({ photos }) {
 
       {/* Content */}
       {viewMode === 'list' ? (
-        <PhotoList photos={filteredPhotos} selectedKeys={selectedKeys} onToggleSelect={toggleSelect} />
+        <PhotoList photos={filteredPhotos} selectedKeys={selectedKeys} onToggleSelect={toggleSelect} onSelectKeys={selectKeys} onDeselectKeys={deselectKeys} />
       ) : (
         <PhotoGridManage photos={filteredPhotos} selectedKeys={selectedKeys} onToggleSelect={toggleSelect} />
       )}
