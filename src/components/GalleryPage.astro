@@ -5,6 +5,7 @@ import PhotoGrid from './PhotoGrid.astro';
 import CategoryNav from './CategoryNav.astro';
 import TagFilter from './TagFilter.astro';
 import { categoryToTheme } from '../lib/categoryMap';
+import { getPhotoThumbUrl, getPhotoUrl, getUploadedDate, normalizeTags } from '../lib/photoMetadata';
 
 export interface Props {
   title: string;
@@ -42,22 +43,23 @@ try {
     categories = Array.from(catSet).sort();
 
     const targetPrefix = category === 'all' ? prefix : `${prefix}${category}/`;
-    const listed = await bucket.list({ prefix: targetPrefix });
+    const listed = await bucket.list({ prefix: targetPrefix, include: ['customMetadata', 'httpMetadata'] });
     photos = (listed.objects || []).map((obj) => {
-      const publicUrl = `https://cdn.tsukino.dev/${obj.key}`;
+      const publicUrl = getPhotoUrl(obj.key);
       const relativeKey = obj.key.slice(prefix.length);
       const parts = relativeKey.split('/');
       const cat = parts.length > 1 ? parts[0] : '';
-      const uploaded = obj.uploaded ? new Date(obj.uploaded) : null;
+      const uploaded = getUploadedDate(obj.customMetadata, obj.uploaded);
+      const tags = normalizeTags(obj.customMetadata?.tags || '');
       return {
         src: publicUrl,
-        thumb: `https://cdn.tsukino.dev/cdn-cgi/image/w=400,quality=75,fit=scale-down/${obj.key}`,
+        thumb: getPhotoThumbUrl(obj.key, 400),
         w: parseInt(obj.customMetadata?.width || '2000', 10),
         h: parseInt(obj.customMetadata?.height || '3000', 10),
         key: obj.key,
         category: cat,
         theme: categoryToTheme[cat] || 'lolita',
-        tags: obj.customMetadata?.tags ? String(obj.customMetadata.tags).split(',').map((t: string) => t.trim()).filter(Boolean) : [],
+        tags,
         date: uploaded ? uploaded.toLocaleDateString('zh-CN') : '',
       };
     });
