@@ -45,7 +45,7 @@ try {
       const uploaded = obj.uploaded ? new Date(obj.uploaded) : null;
       return {
         src: publicUrl,
-        thumb: publicUrl,
+        thumb: `/api/image?key=${encodeURIComponent(obj.key)}&width=400`,
         w: 2000,
         h: 3000,
         key: obj.key,
