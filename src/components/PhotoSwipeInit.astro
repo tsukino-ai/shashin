@@ -68,6 +68,39 @@
       lightbox.pswp.options.easing = backEasing.in;
     });
 
+    // Fix aspect ratio: override declared dimensions with actual image dimensions
+    lightbox.on('change', () => {
+      const slide = lightbox.pswp.currSlide;
+      if (!slide || !slide.content || !slide.content.element) return;
+      const img = slide.content.element;
+      const applyRealSize = () => {
+        if (!img.naturalWidth || !img.naturalHeight) return;
+        const realW = img.naturalWidth;
+        const realH = img.naturalHeight;
+        // Only update if actual size differs from declared size
+        if (slide.width !== realW || slide.height !== realH) {
+          slide.width = realW;
+          slide.height = realH;
+          slide.content.width = realW;
+          slide.content.height = realH;
+          if (slide.content.setDisplayedSize) {
+            slide.content.setDisplayedSize(realW, realH);
+          }
+          if (slide.calculateSize) {
+            slide.calculateSize();
+          }
+          if (slide.isActive && lightbox.pswp.updateSize) {
+            lightbox.pswp.updateSize(true);
+          }
+        }
+      };
+      if (img.complete) {
+        applyRealSize();
+      } else {
+        img.addEventListener('load', applyRealSize, { once: true });
+      }
+    });
+
     lightbox.init();
     return lightbox;
   }
@@ -116,6 +149,10 @@
   }
   .pswp--custom-theme .pswp__button--close:hover {
     background: rgba(255, 255, 255, 0.15);
+  }
+  .pswp--custom-theme .pswp__button--close .pswp__icn {
+    top: 6px;
+    left: 6px;
   }
 
   .pswp--custom-theme .pswp__button--arrow {
