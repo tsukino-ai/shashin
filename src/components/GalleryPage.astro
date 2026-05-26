@@ -7,6 +7,7 @@ import TagFilter from './TagFilter.astro';
 import { categoryToTheme } from '../lib/categoryMap';
 import { getPhotoThumbUrl, getPhotoUrl, getUploadedDate, normalizeTags } from '../lib/photoMetadata';
 import { listAllObjects } from '../lib/r2Pagination';
+import { seededShuffle } from '../lib/dailyShuffle';
 
 export interface Props {
   title: string;
@@ -44,7 +45,12 @@ try {
 
     const targetPrefix = category === 'all' ? prefix : `${prefix}${category}/`;
     const photoObjects = await listAllObjects(bucket, { prefix: targetPrefix, include: ['customMetadata', 'httpMetadata'] });
-    photos = photoObjects.map((obj) => {
+
+    // Daily pseudo-random shuffle: same order all day, different tomorrow
+    const today = new Date().toISOString().slice(0, 10);
+    const shuffled = seededShuffle(photoObjects, today);
+
+    photos = shuffled.map((obj) => {
       const publicUrl = getPhotoUrl(obj.key);
       const relativeKey = obj.key.slice(prefix.length);
       const parts = relativeKey.split('/');
